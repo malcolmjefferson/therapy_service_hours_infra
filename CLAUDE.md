@@ -65,7 +65,7 @@ A hosted web app for therapy trainees to log service hours against licensure goa
 | Auth | **Amazon Cognito** with **Google sign-in only** (no email/password; OQ-01 decided 2026-10-10); **invite-only** | Decided |
 | IaC | **AWS CDK (TypeScript)** | Decided |
 | CI/CD | GitHub to **AWS CodePipeline + CodeBuild** via CodeConnections | Decided |
-| Source control | GitHub, three private repos (section 3) | Decided |
+| Source control | GitHub, three public repos (section 3) | Decided |
 | Region | **us-west-2** (Oregon), both environments | Decided |
 | Accounts | One AWS account, two environments: **dev** and **prod** | Decided |
 | Public URL | Default CloudFront URLs for now; custom domain deferred | Decided |
@@ -81,7 +81,7 @@ A hosted web app for therapy trainees to log service hours against licensure goa
 
 ## 3. Repositories
 
-GitHub owner: **`malcolmjefferson`**, all private.
+GitHub owner: **`malcolmjefferson`**, all **public** (**Decided** 2026-10-10, so branch protection works on the free plan). Nothing secret or account-specific is committed: the AWS account ID comes from `EXPECTED_AWS_ACCOUNT` (see the infra README).
 
 | Repo | Contents |
 |---|---|
@@ -472,6 +472,8 @@ Single pipeline in the infra repo (**Accepted, ADR-0005**):
 3. **Deploy dev:** data stack, then **run migrations** (CodeBuild invokes the migration Lambda), then app stack and frontend sync, then **smoke tests** (health check plus a basic authenticated call)
 4. **Manual approval** (shows the commit SHAs of all three repos)
 5. **Deploy prod** in the same order, after an RDS snapshot
+
+**PR gates run in GitHub Actions; CodePipeline handles build, deploy and promotion after merge** (**Decided** 2026-10-10). Each repo's workflows run its lint, type check, tests and security gates on every pull request so branch protection can require them. Third-party Actions are pinned to full commit SHAs and workflows use least-privilege `permissions` (`contents: read`). Deploys never run from GitHub Actions.
 
 Migrations are **forward-only**, additive-first, and must be safe to run before the new code goes live (expand/contract). Preview deploys are out of scope for v1.
 
