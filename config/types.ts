@@ -29,6 +29,15 @@ export interface EnvConfig {
   readonly logRetention: RetentionDays;
   readonly database: DatabaseSettings;
   readonly api: ApiSettings;
+  readonly web: WebSettings;
+}
+
+/** SPA hosting (S0-12). */
+export interface WebSettings {
+  /** What happens to the SPA bucket when the stack is deleted. Its contents are rebuilt by every deploy. */
+  readonly bucketRemovalPolicy: RemovalPolicy;
+  /** Empty the bucket on stack deletion (needs DESTROY). Dev only. */
+  readonly autoDeleteObjects: boolean;
 }
 
 /**

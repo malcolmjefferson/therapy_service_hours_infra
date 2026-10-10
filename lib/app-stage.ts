@@ -43,7 +43,11 @@ export class TherapyServiceHoursStage extends Stage {
       stackName: `${prefix}app`,
     });
     this.appStack.addStackDependency(this.dataStack, 'App resources use the network and database');
-    this.webStack = new WebStack(this, 'Web', { config, stackName: `${prefix}web` });
+    this.webStack = new WebStack(this, 'Web', {
+      config,
+      apiDomainName: this.appStack.api.domainName,
+      stackName: `${prefix}web`,
+    });
     this.webStack.addStackDependency(this.appStack, 'CloudFront routes /api/* to the API');
   }
 }

@@ -15,6 +15,10 @@ export const prodConfig: EnvConfig = {
     memoryMiB: 256,
     logLevel: 'info',
   },
+  web: {
+    bucketRemovalPolicy: RemovalPolicy.RETAIN,
+    autoDeleteObjects: false,
+  },
   database: {
     backupRetention: Duration.days(7),
     deletionProtection: true,

@@ -19,3 +19,5 @@ cdk.context.json.bak
 *.js
 *.d.ts
 .cdk.staging/
+# CloudFront Function source (plain JS by design)
+!lib/app/spa-rewrite.js
