@@ -37,7 +37,7 @@ Requires Node 22 or later.
 - Credentials for another account, or credentials active with `EXPECTED_AWS_ACCOUNT` unset: synth **refuses**.
 - No credentials: synth only, for `EXPECTED_AWS_ACCOUNT` if set, otherwise AWS's documented placeholder `123456789012`. Nothing can be deployed this way.
 
-**Budget guard (ARC-29):** synth fails if an environment declares a NAT Gateway, RDS Proxy, interface VPC endpoint, load balancer, Multi-AZ or second database, RDS/Aurora cluster, or customer-managed KMS key (`lib/guards/budget-guard.ts`). The error names the rule and the construct path. Adding one of these needs the owner's approval and an ADR (CLAUDE.md �0.6).
+**Budget guard (ARC-29):** synth fails if an environment declares a NAT Gateway, RDS Proxy, interface VPC endpoint, load balancer, Multi-AZ or second database, RDS/Aurora cluster, or customer-managed KMS key (`lib/guards/budget-guard.ts`). The error names the rule and the construct path. Adding one of these needs the owner's approval and an ADR (CLAUDE.md §0.6).
 
 ## Layout
 
@@ -55,4 +55,4 @@ test/             Vitest tests (CDK assertions)
 - `main` is protected: changes go through a pull request with passing checks (ARC-49).
 - Work on a branch named after the ticket, for example `feat/S0-03-backend-skeleton`.
 - Fill in the PR template, including the standards checklists.
-- Client data is **pseudonyms or initials only**, everywhere (CLAUDE.md §0.7).
+- Client data is **pseudonyms or initials only**, everywhere (CLAUDE.md Â§0.7).
