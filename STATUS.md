@@ -5,9 +5,9 @@
 
 ## Summary (2026-10-10)
 
-- **Slice S0 (walking skeleton):** 7 done, 0 in review, 1 in progress, 8 not started (of 16 tickets touching this repo).
-- **AWS:** account bootstrapped for CDK in us-west-2 (CDKToolkit). First dev deploy of the data stack (VPC, RDS, database roles) is pending; nothing else is deployed.
-- **Next:** S0-11 (API) and S0-12 (web) constructs, then the pipeline (S0-14 to S0-16) and alerts and budget (S0-18).
+- **Slice S0 (walking skeleton):** 7 done, 8 in review, 1 in progress, 0 not started (of 16 tickets touching this repo). Every S0 ticket has a PR.
+- **AWS:** account bootstrapped for CDK in us-west-2 (CDKToolkit). The dev data stack (VPC, RDS, database roles) is being redeployed by the owner from `origin/main`; nothing else is deployed.
+- **Next:** merge the stacked S0 PRs, deploy the pipeline stack once and authorize its GitHub connection (owner), then S1 (auth and invites).
 
 ## Tickets
 
@@ -18,7 +18,7 @@
 | S0-05 | CDK app skeleton, environment config and tagging | done | [infra #2](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/2) |  |
 | S0-06 | Budget-guard synth assertion | done | [infra #3](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/3) |  |
 | S0-07 | CDK network and database constructs | done | [infra #6](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/6) | Code merged; first dev deploy of the data stack pending (owner runs it) |
-| S0-08 | Database role bootstrap custom resource (app_rw, migrator, rds_iam) | in review | [infra #7](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/7), fix: infra PR (this one) | First dev deploy failed (dynamic reference not resolved in custom resources); fixed by the deploy-time provider (ADR-0001 amendment) |
+| S0-08 | Database role bootstrap custom resource (app_rw, migrator, rds_iam) | done | [infra #7](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/7), [infra #11](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/11) | Provider/worker design (ADR-0001 amendment); first successful dev deploy pending |
 | S0-11 | CDK api construct: API Gateway HTTP API, api Lambda, throttling, logs | in review | [infra #12](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/12) | Synth-tested; reaches dev with the app-stack deploy |
 | S0-12 | CDK web construct: S3 + OAC, CloudFront, /api/* behavior, SPA rewrite, headers policy | in review | [infra #13](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/13) | Synth-tested; header and 404 checks run after the dev web-stack deploy |
 | S0-14 | Pipeline stack: CDK Pipelines, three CodeConnections sources, build stage | in review | [infra #16](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/16) | Owner: deploy the pipeline stack once and authorize the GitHub connection |
