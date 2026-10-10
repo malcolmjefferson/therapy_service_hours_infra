@@ -71,6 +71,8 @@ export interface DatabaseSettings {
   readonly backupRetention: Duration;
   readonly deletionProtection: boolean;
   readonly removalPolicy: RemovalPolicy;
+  /** Delete automated backups with the instance. Dev: yes (nothing to keep); prod: no (ARC-35). */
+  readonly deleteAutomatedBackups: boolean;
 }
 
 /** Prefix for resource and stack names, for example `therapy-service-hours-dev-` (ARC-31). */
