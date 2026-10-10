@@ -4,8 +4,8 @@ def t(*a): T.append(a)
 
 # ---------------- S0 Walking skeleton ----------------
 t("S0-01","Task","Create repos, branch protection and project scaffolding",
-  "Owner creates the three private GitHub repos under malcolmjefferson; add CLAUDE.md, CODEOWNERS, PR template (Markdown headers/bullets), branch protection on main.",
-  "Three private repos exist with the exact names in CLAUDE.md §3|main requires PR + passing checks|CLAUDE.md and docs/ copied into each repo root|No secrets or real names committed (secret-scan pre-commit hook added)",
+  "Owner creates the three public GitHub repos under malcolmjefferson; add CLAUDE.md, CODEOWNERS, PR template (Markdown headers/bullets), branch protection on main.",
+  "Three public repos exist with the exact names in CLAUDE.md §3|main requires PR + passing checks|CLAUDE.md and docs/ copied into each repo root|No secrets or real names committed (secret-scan pre-commit hook added)",
   1,"","NFR-SEC-05,NFR-DOC-01","US-39","infra,owner-action","Highest")
 t("S0-02","Task","Apply accepted decisions: CLAUDE.md updated for ADR-0001 to ADR-0006",
   "Owner accepted ADR-0001 to ADR-0006 and confirmed ASM-01..ASM-07 and OQ-02/OQ-03 on 2026-10-10 (recorded in the ADRs and spec Section 7). Update CLAUDE.md for the deviations listed in adr/README.md.",
