@@ -23,5 +23,6 @@ export const devConfig: EnvConfig = {
     backupRetention: Duration.days(1),
     deletionProtection: false,
     removalPolicy: RemovalPolicy.DESTROY,
+    deleteAutomatedBackups: true,
   },
 };
