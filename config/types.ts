@@ -28,6 +28,21 @@ export interface EnvConfig {
   /** CloudWatch log retention for every log group (ARC-43). */
   readonly logRetention: RetentionDays;
   readonly database: DatabaseSettings;
+  readonly api: ApiSettings;
+}
+
+/**
+ * API sizing (S0-11). The API Lambda's pgx pool holds at most 2 connections per instance (GO-40),
+ * so reserved concurrency x 2 must stay well under the db.t4g.micro connection limit (about 80
+ * usable after RDS reserves its own). 20 x 2 = 40 leaves room for migrate, the bootstrap and psql.
+ */
+export interface ApiSettings {
+  /** Reserved concurrency of the API Lambda: caps DB connections and cost under load (SEC-81). */
+  readonly reservedConcurrency: number;
+  /** Default stage throttling for every route (SEC-80). Search routes get tighter limits in S6/S10. */
+  readonly throttle: { readonly rateLimit: number; readonly burstLimit: number };
+  readonly memoryMiB: number;
+  readonly logLevel: 'debug' | 'info' | 'warn' | 'error';
 }
 
 /** RDS settings that differ between environments (CLAUDE.md §4.2, ARC-30, ARC-35). */
