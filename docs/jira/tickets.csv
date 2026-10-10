@@ -1,0 +1,1616 @@
+Issue Id,Issue Type,Summary,Description,Priority,Parent Id,Labels,Labels,Labels,Labels,Original Estimate,Story Points,Draft ID,Outward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks)
+1,Epic,S0 Walking skeleton,"Prove the whole delivery path with the smallest possible feature: a page served by CloudFront calls the API, which reads the database, deployed to dev and prod by one pipeline.
+
+Demo: Open the dev and prod URLs: the Status page shows the API version and database check. Break a lint rule, a test or a migration on purpose: the pipeline stops before prod and an email arrives.",High,,M1,S0,,,,,EPIC-S0,,,,,,,,
+2,Epic,S1 Secure sign-in,"Invite-only Google sign-in with roles, the first admin, and the authorization framework every later slice uses.
+
+Demo: An invited Google account signs in and sees its name and role-based navigation; an uninvited account is refused; a deactivated account is refused.",High,,M2,S1,,,,,EPIC-S1,,,,,,,,
+3,Epic,S2 Log hours,"The core product for one user: log sessions with start and end times, save clients, and browse them in the entries table.
+
+Demo: Sign in, add clients, log entries (including an overlap attempt that is blocked), sort, filter, edit, delete.",High,,M3,S2,,,,,EPIC-S2,,,,,,,,
+4,Epic,S3 Goals and progress,"Goal cards with ruler-style progress bars, editable targets, and the approved/pending/rejected rules.
+
+Demo: Goal bars reflect logged hours; changing a target updates the bar; pending hours show as a lighter segment.",High,,M3,S3,,,,,EPIC-S3,,,,,,,,
+5,Epic,S4 Import and export,"Bring in the prototype ledger (marked Needs time) and take data out as Markdown, CSV and PDF.
+
+Demo: Import a prototype file and see the report; export all three formats; re-import the Markdown export with identical results.",High,,M3,S4,,,,,EPIC-S4,,,,,,,,
+6,Epic,S5 Organizations and admin console,"Admins manage organizations, users, roles, email changes, deactivation and deletion, with an audit log.
+
+Demo: As admin: create an organization, invite a user, grant Supervisor, change an email, deactivate and permanently delete; non-admins are refused.",High,,M4,S5,,,,,EPIC-S5,,,,,,,,
+7,Epic,S6 Supervision and notifications,"Find a supervisor in the same organization, request, accept or decline, end a link, and see in-app notifications.
+
+Demo: A trainee requests a supervisor; the supervisor sees the badge, accepts; both see the right state; cross-organization attempts fail.",High,,M4,S6,,,,,EPIC-S6,,,,,,,,
+8,Epic,S7 Review workflow,"Approve, reject (reason), bulk approve, revert (reason), history, locking, and approved-hours-driven progress.
+
+Demo: A supervisor approves, rejects and reverts entries; the trainee sees chips and reasons; goal bars follow approved hours.",High,,M5,S7,,,,,EPIC-S7,,,,,,,,
+9,Epic,S8 Supervisor dashboard,"Pick a supervisee, see per-goal progress, pending and rejected counts, and drill into entries to act.
+
+Demo: A supervisor sees accurate summaries for accepted supervisees only and reviews from the drill-down.",High,,M5,S8,,,,,EPIC-S8,,,,,,,,
+10,Epic,S9 Milestone celebrations,"One-time celebration banners and confetti at 25/50/75/100% of approved hours.
+
+Demo: Approving hours past 25% celebrates once; reload and revert-then-reapprove never replay.",High,,M5,S9,,,,,EPIC-S9,,,,,,,,
+11,Epic,S10 Team schedules,"Read-only Monday to Friday schedules for peers with the same supervisor, showing only time and category.
+
+Demo: Two peers see each other's week blocks; no client, notes, hours, on-site or status ever appears; non-peers are refused.",High,,M6,S10,,,,,EPIC-S10,,,,,,,,
+12,Epic,S11 Hardening and go-live,"Security suites, performance, accessibility, restore drill, cost check, runbook, user guide and the production release.
+
+Demo: All gates green on dev; runbook and user guide done; owner approves prod.",High,,M6,S11,,,,,EPIC-S11,,,,,,,,
+13,Task,"S0-01 Create repos, branch protection and project scaffolding","Owner creates the three private GitHub repos under malcolmjefferson; add CLAUDE.md, CODEOWNERS, PR template (Markdown headers/bullets), branch protection on main.
+
+Acceptance criteria:
+* Three private repos exist with the exact names in CLAUDE.md §3
+* main requires PR + passing checks
+* CLAUDE.md and docs/ copied into each repo root
+* No secrets or real names committed (secret-scan pre-commit hook added)
+
+Requirements: NFR-SEC-05, NFR-DOC-01
+Stories: US-39
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,1,infra,owner-action,S0,,1d,2,S0-01,14,15,17,25,,,,
+14,Task,S0-02 Apply accepted decisions: CLAUDE.md updated for ADR-0001 to ADR-0006,"Owner accepted ADR-0001 to ADR-0006 and confirmed ASM-01..ASM-07 and OQ-02/OQ-03 on 2026-10-10 (recorded in the ADRs and spec Section 7). Update CLAUDE.md for the deviations listed in adr/README.md.
+
+Acceptance criteria:
+* ADR statuses and spec Section 7 already record the owner decisions (no edits needed)
+* CLAUDE.md diagram and tech table updated for the ADR deviations
+
+Requirements: NFR-DOC-01
+Stories: US-39
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,1,docs,decision,S0,,0.5d,1,S0-02,19,35,,,,,,
+15,Story,"S0-03 Backend skeleton: Go module, chi router, /healthz, slog, request IDs","Create therapy_service_hours_backend layout (CLAUDE.md §3.1): config, structured JSON logging with request ID, panic recovery, body size limit, RFC 7807 error helper, Lambda adapter, GET /healthz.
+
+Acceptance criteria:
+* GET /healthz returns 200 JSON with version
+* Every log line is JSON with request_id
+* Panic returns problem+json 500 and logs the stack
+* Unit tests for middleware
+
+Requirements: NFR-OPS-01, NFR-SEC-05
+Stories: US-42
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,1,backend,S0,,,1.5d,3,S0-03,16,21,23,29,,,,
+16,Task,"S0-04 OpenAPI v0 with oapi-codegen, spectral and oasdiff in backend CI","Author api/openapi.yaml (healthz, Problem schema, conventions for pagination and Idempotency-Key); generate server interface; add spectral ruleset and oasdiff breaking-change check.
+
+Acceptance criteria:
+* healthz handler implements the generated interface
+* CI fails if generated code is stale
+* CI fails on a deliberately breaking spec change
+* Spectral ruleset documented
+
+Requirements: NFR-DOC-01
+Stories: US-39
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,1,backend,api,adr-0006,S0,1.5d,3,S0-04,25,31,,,,,,
+17,Task,"S0-05 CDK app skeleton, environment config and tagging","Create therapy_service_hours_infra: bin/, lib/, config/dev.ts and prod.ts (account, region us-west-2, retention, backup, deletion protection), mandatory tags app/env/owner.
+
+Acceptance criteria:
+* cdk synth passes for dev and prod
+* All resources carry app/env/owner tags (assertion test)
+* Log retention 14d dev / 30d prod config values present
+
+Requirements: NFR-OPS-04, NFR-COST-01
+Stories: US-39, US-42
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,1,infra,S0,,,1.5d,3,S0-05,18,19,26,,,,,
+18,Task,S0-06 Budget-guard synth assertion,"CDK Aspect/test that fails synth if a NAT Gateway, RDS Proxy, interface VPC endpoint, ALB/NLB, Multi-AZ DB, or customer-managed KMS key is declared.
+
+Acceptance criteria:
+* A fixture stack with a NAT Gateway fails the assertion
+* Real stacks pass
+* Failure message names the rule and CLAUDE.md §0.6
+
+Requirements: NFR-COST-01
+Stories: US-41
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,1,infra,cost,S0,,1d,2,S0-06,,,,,,,,
+19,Task,S0-07 CDK network and database constructs,"VPC with private-isolated subnets in two AZs and an S3 gateway endpoint (no NAT), security groups, single-AZ RDS PostgreSQL db.t4g.micro with encryption, IAM auth enabled, per-env backup retention and deletion protection.
+
+Acceptance criteria:
+* Prod: deletion protection on, 7-day backups; dev: off, 1 day
+* No 0.0.0.0/0 ingress
+* DB not publicly accessible
+* Master secret generated by RDS
+
+Requirements: NFR-SEC-04, NFR-REL-01, NFR-COST-01
+Stories: US-39
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,1,infra,db,adr-0001,S0,2d,5,S0-07,20,23,,,,,,
+20,Task,"S0-08 Database role bootstrap custom resource (app_rw, migrator, rds_iam)","Idempotent custom resource (Lambda in VPC) creates roles with GRANT rds_iam; app_rw has DML only, migrator has DDL on the app schema; resolves master secret via CloudFormation dynamic reference at deploy time.
+
+Acceptance criteria:
+* Re-running the resource changes nothing
+* app_rw cannot CREATE TABLE (verified in S11-03)
+* No runtime Lambda calls Secrets Manager
+
+Requirements: NFR-SEC-01, NFR-SEC-04
+Stories: US-39
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,1,infra,db,adr-0001,S0,2d,5,S0-08,22,,,,,,,
+21,Story,S0-09 Backend DB package: pgx pool with IAM token refresh and TLS,"internal/db: pgx pool (max 2 conns), BeforeConnect hook that signs a fresh IAM token, sslmode=verify-full with embedded RDS CA bundle, local password mode for tests, transaction helper.
+
+Acceptance criteria:
+* Token refreshed on a new connection after expiry (injected clock test)
+* Local mode works with Testcontainers
+* Connection failures return a typed error
+
+Requirements: NFR-SEC-01, NFR-SEC-04
+Stories: US-39
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,1,backend,db,adr-0001,S0,1.5d,3,S0-09,22,39,,,,,,
+22,Story,S0-10 Migrate Lambda with embedded goose and baseline migration,"cmd/migrate: embeds db/migrations, takes a Postgres advisory lock, runs goose as migrator role, returns a JSON result. Baseline migration enables citext and btree_gist. CI check rejects untagged DROP.
+
+Acceptance criteria:
+* Second invocation is a no-op
+* Two concurrent invocations: one waits on the lock
+* Untagged DROP COLUMN fails CI
+* Failure returns non-success payload
+
+Requirements: NFR-OPS-02
+Stories: US-40
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,1,backend,db,adr-0003,S0,2d,5,S0-10,27,37,,,,,,
+23,Task,"S0-11 CDK api construct: API Gateway HTTP API, api Lambda, throttling, logs","Go Lambda (provided.al2023, arm64) in private subnets, reserved concurrency cap, HTTP API with default throttling and tighter limits on search routes, access logs, least-privilege role (rds-db:connect for app_rw only).
+
+Acceptance criteria:
+* GET /api/v1/healthz returns 200 via API Gateway
+* Reserved concurrency set (value documented against max_connections)
+* IAM role has no wildcard resources
+
+Requirements: NFR-OPS-01, NFR-SEC-04, NFR-REL-01
+Stories: US-39, US-42
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,1,infra,backend,S0,,2d,5,S0-11,24,30,,,,,,
+24,Task,"S0-12 CDK web construct: S3 + OAC, CloudFront, /api/* behavior, SPA rewrite, headers policy","Private S3 bucket (Block Public Access, OAC), CloudFront with S3 default behavior and /api/* to API Gateway (no cache, Authorization forwarded), CloudFront Function for extensionless-path rewrite, response headers policy with CSP.
+
+Acceptance criteria:
+* Deep link loads the SPA
+* Unknown /api/v1/x returns problem+json 404, not index.html
+* Headers: HSTS, nosniff, referrer-policy, frame deny, CSP present
+* index.html no-cache; hashed assets immutable
+
+Requirements: NFR-SEC-04, NFR-SEC-05
+Stories: US-39
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,1,infra,adr-0004,S0,,2d,5,S0-12,27,,,,,,,
+25,Story,"S0-13 Frontend skeleton: Vite + TS, router, TanStack Query, theme, self-hosted fonts","Create therapy_service_hours_frontend: Vite React TS, React Router, TanStack Query, theme tokens (CLAUDE.md §12.2), Fredoka and Inter self-hosted, eslint/tsc/vitest/RTL/MSW setup, a Status page calling /api/v1/healthz.
+
+Acceptance criteria:
+* npm run build produces dist/
+* Status page shows API version from healthz
+* Fonts load from own origin (CSP passes)
+* Lint, tsc and unit tests run in CI
+
+Requirements: NFR-UX-01, NFR-A11Y-01
+Stories: US-39
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,1,frontend,S0,,,2d,5,S0-13,27,29,31,56,,,,
+26,Story,"S0-14 Pipeline stack: CDK Pipelines, three CodeConnections sources, build stage","CDK Pipelines in infra repo with sources from all three repos, queued execution, parallel build/test (backend, frontend, infra synth) and artifact output (Lambda zips, dist/).
+
+Acceptance criteria:
+* Merge to any repo main triggers one run showing all three SHAs
+* Failing lint/test stops the run and alerts
+* Pipeline self-mutates from infra repo
+* Cost of CodePipeline V2/CodeBuild estimated and recorded
+
+Requirements: NFR-OPS-02
+Stories: US-39
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,1,infra,pipeline,adr-0005,S0,2d,5,S0-14,27,30,31,,,,,
+27,Story,"S0-15 Pipeline: deploy dev (data, migrate, app, frontend) and smoke test","Dev stage deploys data stack, invokes migrate Lambda from non-VPC CodeBuild, deploys app stack, syncs frontend to S3 and invalidates index.html, runs smoke (healthz + status page).
+
+Acceptance criteria:
+* Broken migration stops the run before app stack deploy
+* Smoke failure blocks approval stage
+* Dev URL serves the Status page
+
+Requirements: NFR-OPS-02
+Stories: US-39, US-40
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,1,infra,pipeline,adr-0003,S0,2d,5,S0-15,28,32,34,,,,,
+28,Story,"S0-16 Pipeline: manual approval, pre-prod snapshot, deploy prod, SNS notifications","Approval stage shows the three commit SHAs and sends SNS; on approval takes an RDS snapshot, deploys the same artifacts to prod in the same order.
+
+Acceptance criteria:
+* Prod deploy uses the artifact digests tested in dev
+* Reject path leaves prod untouched
+* Approval restricted to owner IAM principal
+* Snapshot exists before prod migration
+
+Requirements: NFR-OPS-02, NFR-OPS-03
+Stories: US-39, US-40
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,1,infra,pipeline,adr-0005,S0,1.5d,3,S0-16,33,,,,,,,
+29,Task,S0-17 CI security and quality gates,"golangci-lint, gosec (G201/G202), govulncheck, Semgrep rule forbidding string-built SQL in query calls, sqlc-current check, eslint, tsc, npm audit, Dependabot config in all repos.
+
+Acceptance criteria:
+* Seeded string-built SQL snippet fails the Semgrep rule
+* All gates run in the build stage and fail fast
+* Dependabot PRs enabled
+
+Requirements: NFR-SEC-01, NFR-SEC-05
+Stories: US-43
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,1,ci,security,S0,,1.5d,3,S0-17,26,,,,,,,
+30,Task,"S0-18 Alerts and budget: SNS email, $50 AWS Budget, CloudWatch alarms","SNS topic subscribed to owner email, AWS Budget at $50/month with 80% and 100% alerts, alarms for Lambda errors/throttles and API Gateway 5xx, pipeline failure notifications.
+
+Acceptance criteria:
+* Owner confirms SNS subscription once
+* Test alarm delivers an email
+* Budget alerts configured
+* Alarm thresholds documented
+
+Requirements: NFR-OPS-03, NFR-OPS-01, NFR-COST-01
+Stories: US-41, US-42
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,1,infra,ops,S0,,1d,2,S0-18,,,,,,,,
+31,Task,S0-19 OpenAPI pinned-copy sync and drift gate in frontend and pipeline,"Pipeline build copies backend spec at the released commit into frontend, runs openapi-typescript, fails if the committed pinned copy differs; npm run api:sync for local use; typed openapi-fetch client wired to Status page.
+
+Acceptance criteria:
+* Changing the backend spec without syncing fails the build
+* Typed client compile error if an endpoint is removed
+* Pinned copy records backend SHA
+
+Requirements: NFR-DOC-01
+Stories: US-39
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,1,frontend,api,adr-0006,S0,1d,2,S0-19,38,43,,,,,,
+32,Task,S0-20 Minimal Playwright smoke and header scan against dev,"Playwright test: deep link loads SPA, /api/v1/healthz returns JSON, unknown API path returns problem+json; header scan asserts security headers.
+
+Acceptance criteria:
+* Test runs in the dev smoke stage
+* Failure blocks approval
+* Headers asserted by name and value
+
+Requirements: NFR-SEC-05, NFR-OPS-02
+Stories: US-39
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,1,e2e,ci,adr-0004,S0,1.5d,3,S0-20,,,,,,,,
+33,Task,S0-21 Runbook v0 and README per repo,"Document local setup, deploy flow, approvals, how to read alarms, how to restore, how to add a migration (expand/contract), and the budget guard.
+
+Acceptance criteria:
+* A new developer can run backend tests and frontend dev server from README
+* Runbook lists first-response steps for pipeline failure
+
+Requirements: NFR-DOC-01
+Stories: US-39
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,1,docs,S0,,,1d,2,S0-21,,,,,,,,
+34,Story,"S1-01 Cognito user pool, Google IdP, app client, hosted UI, Secrets Manager reference","CDK auth construct: user pool with self sign-up disabled, groups admin and supervisor, Google identity provider with client secret from Secrets Manager (owner creates the Google OAuth client), app client with code+PKCE, hosted UI domain, callback URLs from the CloudFront domain.
+
+Acceptance criteria:
+* Owner-provided Google OAuth client id/secret stored in Secrets Manager, not committed
+* Callback/logout URLs match dev and prod CloudFront domains (ordering documented)
+* Self sign-up disabled
+
+Requirements: FR-AUTH-01, NFR-SEC-04
+Stories: US-01
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,2,infra,auth,S1,,2d,5,S1-01,36,42,43,85,,,,
+35,Spike,S1-02 Spike: invited-email binding for Google-only sign-in (OQ-01 decided),"OQ-01 is decided: Google sign-in only, no email/password. Time-boxed to 1 day. Document how federated Google users bind to pre-created Cognito users, and the dev E2E test-user strategy.
+
+Acceptance criteria:
+* Binding approach recorded in ADR-0002 notes
+* Proof that an invited email binds to one Cognito identity without duplicates
+* Test-user approach for Playwright agreed
+
+Requirements: FR-AUTH-01, FR-AUTH-03
+Stories: US-01
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,2,spike,auth,S1,,1d,2,S1-02,34,86,,,,,,
+36,Story,S1-03 PreSignUp Lambda enforcing the invitation allowlist,"VPC Lambda trigger connecting with a read-only IAM database role; rejects emails not in invitations or belonging to deactivated users; covers federated Google sign-ins.
+
+Acceptance criteria:
+* Uninvited Google email is rejected with a stable error code
+* Invited email passes
+* Deactivated user rejected
+* Lambda has no internet and no write rights
+
+Requirements: FR-AUTH-01, FR-AUTH-05
+Stories: US-02
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,2,backend,auth,db,S1,1.5d,3,S1-03,46,92,,,,,,
+37,Story,"S1-04 Migration: organizations, users, invitations; seed Default Organization","goose migration creating the tables per CLAUDE.md §9 with citext email uniqueness, NOT NULL organization, role mirror columns, status check; sqlc queries for lookup by email/sub.
+
+Acceptance criteria:
+* Applies cleanly via migrate Lambda
+* users.email unique case-insensitively
+* Default Organization row created idempotently
+
+Requirements: FR-AUTH-02, FR-AUTH-03
+Stories: US-46
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,2,backend,db,S1,,1.5d,3,S1-04,36,38,39,42,47,82,98,
+38,Task,"S1-05 OpenAPI: /me, security scheme, Problem responses","Spec the bearer JWT scheme, GET /me response (id, name, email, roles, organization), and standard 401/403/404 problem responses; regenerate server and frontend types.
+
+Acceptance criteria:
+* Spectral clean
+* Frontend drift gate passes
+* Examples contain only fictional data
+
+Requirements: FR-AUTH-04
+Stories: US-01
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,2,api,adr-0006,S1,,1d,2,S1-05,39,,,,,,,
+39,Story,"S1-06 Auth middleware: claims to actor, user lookup, sub binding, deactivated check","Resolve the actor from JWT claims, load the user by email/sub, bind cognito_sub on first sign-in inside a transaction, refuse deactivated users, re-verify roles against the users row.
+
+Acceptance criteria:
+* First sign-in binds sub once (concurrent first requests do not duplicate)
+* Deactivated user gets 403 even with a valid token
+* Role in token but not in DB is ignored
+
+Requirements: FR-AUTH-03, FR-AUTH-04, FR-AUTH-05
+Stories: US-01, US-02
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,2,backend,auth,security,S1,2d,5,S1-06,40,41,45,,,,,
+40,Story,S1-07 internal/authz policy framework,"Central policy package: Actor type, role predicates, relationship checks interface (same org, supervisor-of), helper that handlers must call; lint/test that handlers reference authz.
+
+Acceptance criteria:
+* Table-driven unit tests for policy functions
+* Handler template demonstrates usage
+* Documented contract for later slices
+
+Requirements: NFR-SEC-02, FR-AUTH-04
+Stories: US-44
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,2,backend,security,S1,,1.5d,3,S1-07,41,51,52,53,66,84,126,140
+41,Story,S1-08 GET /me endpoint,"Returns the current user's profile, roles and organization via a dedicated DTO.
+
+Acceptance criteria:
+* Returns 200 for active user
+* 401 without token
+* DTO contains explicit fields only
+
+Requirements: FR-AUTH-04
+Stories: US-01
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,2,backend,api,S1,,1d,2,S1-08,43,,,,,,,
+42,Task,S1-09 Seed script: first admin and Default Organization,"scripts/seed-first-admin: idempotent invocation of a seed Lambda/CLI that creates the invitation, user row (Admin) and organization; also supports adding test invitations in dev only.
+
+Acceptance criteria:
+* Running twice changes nothing
+* Prod seeding requires an explicit flag
+* Dev helper cannot run against prod
+
+Requirements: FR-AUTH-02
+Stories: US-46
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,2,infra,scripts,S1,,1d,2,S1-09,46,,,,,,,
+43,Story,"S1-10 Frontend auth: Cognito hosted UI (code + PKCE), AuthProvider, route guards","Redirect flow, token handling in memory with refresh, AuthProvider/useAuth, protected routes, 401 handling in the API client.
+
+Acceptance criteria:
+* Sign-in and sign-out work end to end on dev
+* Tokens are not stored in localStorage
+* Expired session redirects to sign-in
+
+Requirements: FR-AUTH-01, FR-AUTH-06
+Stories: US-01
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,2,frontend,auth,S1,,2d,5,S1-10,44,,,,,,,
+44,Story,"S1-11 App shell: header, role-aware nav, landing and access-denied pages","Header with title/kicker per prototype, user name menu, nav items by role, signed-out landing, 'Access has not been granted' page for rejected sign-ins.
+
+Acceptance criteria:
+* Nav shows only permitted items
+* Access-denied page text matches US-02
+* axe has no serious violations
+
+Requirements: FR-AUTH-06
+Stories: US-01, US-02
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,2,frontend,ux,S1,,1.5d,3,S1-11,46,94,106,108,128,142,,
+45,Task,S1-12 Group claims to role mirror: consistency and token refresh tests,"Verify cognito:groups claims versus users.is_admin/is_supervisor handling, including stale tokens after demotion (DB wins).
+
+Acceptance criteria:
+* Demoted admin with a still-valid token is refused on admin checks
+* Test documents behavior
+* Runbook note added
+
+Requirements: FR-AUTH-04
+Stories: US-44
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,2,backend,security,S1,,1d,2,S1-12,,,,,,,,
+46,Task,S1-13 E2E: invited sign-in and denied sign-in,"Playwright against dev using the test-user strategy from S1-02: invited user lands in app with name shown; uninvited user sees the access-denied page; sign-out.
+
+Acceptance criteria:
+* Both paths pass in the dev smoke stage
+* No real credentials committed
+
+Requirements: FR-AUTH-01, FR-AUTH-06
+Stories: US-01, US-02
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,2,e2e,S1,,,2d,5,S1-13,63,,,,,,,
+47,Story,"S2-01 Migration: categories, clients, entries, entry_clients with DB constraints","Create tables per CLAUDE.md §9 including times from day one: end>start, both-null-or-both-set, duration_minutes consistency, divisible by 15, btree_gist exclusion per user for non-rejected entries with times, index (user_id, session_date, start_time); seed the 12 categories.
+
+Acceptance criteria:
+* Overlapping insert is rejected by the DB (exclusion violation)
+* Constraint tests for each rule
+* Seed categories match CLAUDE.md §8 in group and order
+
+Requirements: FR-LOG-04, FR-LOG-07, FR-LOG-03
+Stories: US-03, US-04
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,3,backend,db,S2,,2d,5,S2-01,48,49,64,111,,,,
+48,Story,"S2-02 sqlc queries for categories, clients and entries","Static queries: insert/update/delete entry (own only), list with optional filters via named params, separate fixed queries per allowed sort, client list/insert, category list. No dynamic SQL.
+
+Acceptance criteria:
+* sqlc generate clean and committed
+* Semgrep rule passes
+* Optional filters use named params
+* Sort handled by allowlist mapping to fixed queries
+
+Requirements: NFR-SEC-01, FR-LOG-08
+Stories: US-07
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,3,backend,db,security,S2,2d,5,S2-02,51,52,53,54,,,,
+49,Task,"S2-03 OpenAPI: categories, clients, entries","Spec CRUD, list parameters (group, client text, from/to, sort, dir, page), 409 overlap problem type, Idempotency-Key on POST, hours is read-only and absent from request schemas.
+
+Acceptance criteria:
+* Spectral clean
+* Request schema forbids unknown fields
+* Generated client compiles
+
+Requirements: NFR-DOC-01, FR-LOG-02
+Stories: US-03
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,3,api,S2,,,1d,2,S2-03,50,52,53,54,57,71,138,
+50,Story,S2-04 Entry validation service,"Validate 15-minute steps, end after start, no midnight crossing, required fields, field lengths; compute duration_minutes; reject any client-sent hours; table-driven tests.
+
+Acceptance criteria:
+* Boundary cases (23:45 to 00:00 rejected, 00:00 to 00:15 accepted)
+* Unknown field 'hours' returns 400
+* Hours 1.25 for 75 minutes
+
+Requirements: FR-LOG-02, FR-LOG-03, FR-LOG-10
+Stories: US-03
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,3,backend,S2,,,1.5d,3,S2-04,51,,,,,,,
+51,Story,"S2-05 Create, update and delete entry endpoints with authz and overlap mapping","Handlers call authz (own entries, status pending/rejected), map exclusion violation 23P01 to 409 problem naming the conflicting session, update/delete own entries.
+
+Acceptance criteria:
+* Other user's entry id returns 404
+* Overlap returns 409 with conflicting date/time
+* Concurrent overlapping creates: exactly one succeeds
+
+Requirements: FR-LOG-01, FR-LOG-04, FR-LOG-05
+Stories: US-03, US-04, US-08
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,3,backend,api,security,S2,2d,5,S2-05,55,57,73,117,,,,
+52,Story,"S2-06 List entries endpoint: filters, sort allowlist, pagination, LIKE escaping","GET /entries with group, client text (wildcards escaped, length capped), date range, sort/dir allowlist (else 400), page size default 50, default newest first, category sort by group then name.
+
+Acceptance criteria:
+* Invalid sort returns 400
+* % and _ in client filter match literally
+* Pagination stable under equal dates
+
+Requirements: FR-LOG-08, NFR-SEC-01
+Stories: US-07
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,3,backend,api,security,S2,2d,5,S2-06,59,76,141,,,,,
+53,Story,S2-07 Clients API with case-insensitive uniqueness,"List/create/rename/delete own clients; unique (user_id, lower(name)); deletion of a client used by entries is handled (detach with confirmation flag).
+
+Acceptance criteria:
+* Creating 'a.b.' when 'A.B.' exists returns the existing client or 409 (documented)
+* Cannot touch another user's clients
+
+Requirements: FR-LOG-06
+Stories: US-05
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,3,backend,api,S2,,1.5d,3,S2-07,58,,,,,,,
+54,Task,S2-08 Categories endpoint,"GET /categories returns grouped lookup data with Cache-Control.
+
+Acceptance criteria:
+* Returns 12 categories in order
+* Cacheable response headers
+
+Requirements: FR-LOG-07
+Stories: US-03
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,3,backend,api,S2,,0.5d,1,S2-08,,,,,,,,
+55,Story,S2-09 Idempotency-Key middleware,"Store key, actor, request hash and response in an idempotency table (Postgres, no extra service) with TTL cleanup; replay returns the original response; mismatched hash returns 422.
+
+Acceptance criteria:
+* Same key twice creates one entry
+* Different payload with same key returns 422
+* Expired keys purged by a scheduled cleanup
+
+Requirements: FR-LOG-01, NFR-DOC-01
+Stories: US-03
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,3,backend,api,S2,,2d,5,S2-09,74,115,,,,,,
+56,Story,S2-10 Frontend component library port from prototype,"Button (primary/ghost), grouped Select, Toast, Badge (group colors), Dialog, form field with label and error, using theme tokens; Storybook-free but with RTL tests.
+
+Acceptance criteria:
+* Contrast of all text/background pairs at least 4.5:1 (test)
+* Focus ring red-deep 2px
+* prefers-reduced-motion respected
+
+Requirements: NFR-UX-01, NFR-A11Y-01, FR-LOG-10
+Stories: US-03
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,3,frontend,ux,S2,,2d,5,S2-10,57,58,59,68,122,135,,
+57,Story,"S2-11 Entry form: date, category, start/end, read-only hours, on-site, notes","Port prototype form order; time inputs in 15-minute steps; calculated hours displayed read-only; pseudonym warning on notes; inline errors and toast.
+
+Acceptance criteria:
+* Add entry works by click and Enter
+* Hours update live
+* Warning text visible
+* Errors announced to screen readers
+
+Requirements: FR-LOG-01, FR-LOG-02, FR-LOG-03, FR-LOG-09, FR-LOG-10
+Stories: US-03, US-06
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,3,frontend,S2,,,2d,5,S2-11,61,,,,,,,
+58,Story,S2-12 Client multi-select dropdown with inline + add,"Checkbox multi-select dropdown (not a list box) with a + button that opens an inline full-width input; pseudonym warning; keyboard accessible.
+
+Acceptance criteria:
+* Select several clients
+* Duplicates differing in case are not created
+* Input is never clipped
+
+Requirements: FR-LOG-06, FR-LOG-09
+Stories: US-05, US-06
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,3,frontend,ux,S2,,2d,5,S2-12,,,,,,,,
+59,Story,"S2-13 Entries table: sorting, badges, client lines, empty states, pagination","Sortable headers as real buttons with aria-sort, group badges, one client per line, empty and no-match states, pagination, default newest first.
+
+Acceptance criteria:
+* Sort toggles asc/desc per column
+* aria-sort correct
+* Pagination works against the API
+
+Requirements: FR-LOG-08
+Stories: US-07
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,3,frontend,S2,,,2d,5,S2-13,60,61,120,,,,,
+60,Story,"S2-14 Table filters, Clear filters and resizable columns","Filter by group, client text, date range; Clear filters on the Entries header row with Export/Import placeholders; percentage-width resizable columns.
+
+Acceptance criteria:
+* Filters combine
+* Clear resets all
+* Resizing keeps total width at 100%
+
+Requirements: FR-LOG-08
+Stories: US-07
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,3,frontend,ux,S2,,2d,5,S2-14,62,,,,,,,
+61,Story,S2-15 Edit and delete flows with confirmation and overlap error UX,"Edit populates the form; delete asks for confirmation; overlap conflict error appears inline naming the clashing session.
+
+Acceptance criteria:
+* Editing preserves unchanged values
+* Overlap message matches US-04
+* Delete confirmation is keyboard accessible
+
+Requirements: FR-LOG-05, FR-LOG-04
+Stories: US-04, US-08
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,3,frontend,S2,,,1.5d,3,S2-15,62,75,,,,,,
+62,Task,"S2-16 Tests: Testcontainers integration, injection payloads, MSW/RTL, axe","Go integration tests against real PostgreSQL for constraints, overlap, authz on entries/clients; injection payloads on client filter, sort, notes; RTL+MSW for form and table; axe on the entries page.
+
+Acceptance criteria:
+* Injection payloads leave tables intact and return clean 4xx or literal matches
+* Concurrent overlap test
+* axe has no serious or critical violations
+
+Requirements: NFR-SEC-01, NFR-A11Y-01, FR-LOG-04
+Stories: US-03, US-04, US-07
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,3,test,S2,,,2d,5,S2-16,63,,,,,,,
+63,Task,S2-17 E2E: log an entry critical path,"Playwright: sign in, add client, log an entry, see it in the table, attempt an overlap, edit and delete.
+
+Acceptance criteria:
+* Passes in the dev smoke stage
+* Uses fictional pseudonyms only
+
+Requirements: FR-LOG-01, FR-LOG-04, FR-LOG-05
+Stories: US-03, US-04, US-08
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,3,e2e,S2,,,1d,2,S2-17,,,,,,,,
+64,Story,S3-01 Migration: goals table with defaults and last_celebrated_percent,"Create goals (unique user_id+goal_type, target_hours, last_celebrated_percent); defaults 1200/100/3000 and On-site with no target created when a user row is first bound.
+
+Acceptance criteria:
+* Defaults exist for every active user
+* Unique constraint enforced
+* Targets must be positive when set
+
+Requirements: FR-GOAL-01, FR-GOAL-02
+Stories: US-09, US-10
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,4,backend,db,S3,,1d,2,S3-01,65,,,,,,,
+65,Story,S3-02 Progress aggregate queries,"Static sqlc query returning approved and pending minutes per goal type, supervision group/individual split, and on-site totals; rejected excluded.
+
+Acceptance criteria:
+* Matches hand-computed fixtures
+* Single query per request (no N+1)
+* Uses (user_id, status) index (EXPLAIN reviewed)
+
+Requirements: FR-GOAL-01, FR-GOAL-03, FR-GOAL-05
+Stories: US-09
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,4,backend,db,S3,,1.5d,3,S3-02,66,67,119,126,,,,
+66,Story,S3-03 Goals API: progress and target updates,"OpenAPI plus GET /goals/progress and PUT /goals/{type} for own targets with validation.
+
+Acceptance criteria:
+* Non-positive target returns 400
+* On-site target cannot be set
+* Another user's goals are not reachable
+
+Requirements: FR-GOAL-02, FR-GOAL-03
+Stories: US-09, US-10
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,4,backend,api,S3,,1.5d,3,S3-03,69,132,,,,,,
+67,Task,S3-04 Goal math unit tests,"Table-driven tests for approved/pending/rejected inclusion, rounding, percent calculation, supervision combination.
+
+Acceptance criteria:
+* Edge cases: zero entries, target change, over 100%
+* Percent rounding rule documented
+
+Requirements: FR-GOAL-03
+Stories: US-09
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,4,backend,test,S3,,1d,2,S3-04,,,,,,,,
+68,Story,S3-05 ProgressBar component with ruler ticks and approved/pending segments,"Accessible bar: role=progressbar, aria-valuenow/max/valuetext, ticks at 25/50/75%, lighter pending segment, goal colors.
+
+Acceptance criteria:
+* aria-valuetext reads '312 of 1200 hours approved, 20 pending'
+* Contrast checks pass
+* Reduced motion respected
+
+Requirements: FR-GOAL-04, FR-GOAL-03
+Stories: US-09
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,4,frontend,a11y,S3,,2d,5,S3-05,69,129,,,,,,
+69,Story,"S3-06 Goal cards row, supervision split and target editing","Cards for Direct, Supervision (with Group/Individual split), Total Activity and On-site; edit-target dialog.
+
+Acceptance criteria:
+* Editing a target updates the bar immediately
+* Invalid values show messages
+* On-site card has no target
+
+Requirements: FR-GOAL-01, FR-GOAL-02, FR-GOAL-05
+Stories: US-09, US-10
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,4,frontend,S3,,,2d,5,S3-06,70,,,,,,,
+70,Task,"S3-07 Tests: RTL, axe and E2E for goals (with approved-hours test seeding)","Until S7 exists, a dev-only seed helper marks entries approved; RTL/axe on cards; E2E changes a target.
+
+Acceptance criteria:
+* Helper is unavailable in prod builds
+* E2E passes
+* axe clean
+
+Requirements: FR-GOAL-03, FR-GOAL-04, NFR-A11Y-01
+Stories: US-09, US-10
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,4,test,e2e,S3,,1.5d,3,S3-07,,,,,,,,
+71,Task,S4-01 OpenAPI: import and export endpoints,"Spec POST /import/markdown (size limits, report schema) and GET /export/entries (paged, all fields incl. times).
+
+Acceptance criteria:
+* Report schema lists imported, merged clients, skipped rows with reasons
+* Spectral clean
+
+Requirements: FR-IO-01, FR-IO-04
+Stories: US-11, US-12
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,5,api,S4,,,1d,2,S4-01,72,76,,,,,,
+72,Story,S4-02 Markdown ledger parser (both layouts),"Parse the prototype format into typed values: Clients/Groups section, entries table with or without Start/End, escaped pipes, '; ' multi-client, '—' none, old single-client files; per-row errors.
+
+Acceptance criteria:
+* Golden files from the prototype parse correctly
+* Fuzz test does not panic
+* Unicode and long cells handled
+
+Requirements: FR-IO-01, FR-IO-03
+Stories: US-11
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,5,backend,parser,S4,,2d,5,S4-02,73,,,,,,,
+73,Story,"S4-03 Import service: transactional parameterized inserts, client merge, Needs time","Insert entries without times as needs_time with duration from Hours; merge clients case-insensitively; skip exact duplicates (assumption ASM-07); all in one transaction with a report.
+
+Acceptance criteria:
+* Re-importing the same file adds nothing and reports skipped
+* Bad rows are reported, valid rows kept (documented policy)
+* Rows with times obey overlap rules
+
+Requirements: FR-IO-02, FR-IO-03
+Stories: US-11
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,5,backend,db,S4,,2d,5,S4-03,74,75,,,,,,
+74,Story,S4-04 Import endpoint with limits,"Multipart upload, 1 MB limit, 5,000-row cap, content-type checks, authz own data only, Idempotency-Key.
+
+Acceptance criteria:
+* Oversize file returns 413 problem
+* Non-Markdown returns 400
+* Injection-like cell content stored as plain text
+
+Requirements: FR-IO-01, FR-IO-03, NFR-SEC-01
+Stories: US-11
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,5,backend,api,security,S4,1.5d,3,S4-04,80,,,,,,,
+75,Story,"S4-05 Needs-time entries: add times via edit, badge, overlap exemption","Editing a needs_time entry requires times and clears the flag; hours recalculate; table shows a 'Needs time' badge; overlap check ignores legacy entries.
+
+Acceptance criteria:
+* Flag clears on valid times
+* Hours change from legacy to calculated
+* Badge visible and announced
+
+Requirements: FR-IO-02
+Stories: US-17
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,5,backend,frontend,S4,,1.5d,3,S4-05,81,,,,,,,
+76,Story,S4-06 Export data endpoint,"Paged, ownership-scoped export of all own entries with times, clients and status.
+
+Acceptance criteria:
+* Returns only own entries
+* Page size cap enforced
+* Includes Start and End
+
+Requirements: FR-IO-04
+Stories: US-12
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,5,backend,api,S4,,1d,2,S4-06,77,78,79,,,,,
+77,Story,S4-07 Markdown export (round-trippable) shared serializer,"Frontend serializer to the prototype format plus Start/End columns, escaping pipes, '; ' client joins.
+
+Acceptance criteria:
+* Export then import yields identical entries (property test)
+* Header documented
+
+Requirements: FR-IO-04
+Stories: US-12
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,5,frontend,S4,,,1.5d,3,S4-07,81,,,,,,,
+78,Story,S4-08 CSV export with formula-injection protection,"Neutralize cells starting with = + - @ tab or CR; RFC 4180 quoting; UTF-8 BOM option.
+
+Acceptance criteria:
+* Cell '=1+1' is exported as text
+* Commas/quotes/newlines preserved
+
+Requirements: FR-IO-05
+Stories: US-12
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,5,frontend,security,S4,,1d,2,S4-08,81,,,,,,,
+79,Story,S4-09 PDF export in the browser,"Lazy-loaded PDF generation (no server call) with goal summary and entries table including times; fonts embedded.
+
+Acceptance criteria:
+* No network request during generation
+* Multi-page tables paginate
+* Bundle size increase documented and lazy
+
+Requirements: FR-IO-06
+Stories: US-12
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,5,frontend,S4,,,2d,5,S4-09,,,,,,,,
+80,Story,S4-10 Import dialog and report UI,"Import and Export buttons on the Entries header row; file picker, progress, report with skipped-row reasons.
+
+Acceptance criteria:
+* Errors readable
+* Keyboard accessible
+* Report downloadable as text
+
+Requirements: FR-IO-01, FR-IO-02, FR-IO-03
+Stories: US-11
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,5,frontend,S4,,,1.5d,3,S4-10,81,,,,,,,
+81,Task,"S4-11 Tests: corpus, round trip, crafted injection rows, E2E import","Go tests with prototype-generated corpus and malicious rows; frontend round-trip; Playwright import of a prototype file.
+
+Acceptance criteria:
+* Crafted rows with quotes, backslashes, % _ and SQL keywords import literally
+* E2E passes
+
+Requirements: FR-IO-01, FR-IO-03, FR-IO-04, FR-IO-05, NFR-SEC-01
+Stories: US-11, US-12
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,5,test,e2e,security,S4,2d,5,S4-11,147,,,,,,,
+82,Story,S5-01 Migration: admin_audit_log and user lifecycle columns,"Add admin_audit_log (actor snapshot, action, target, details jsonb), deactivated_at, indexes, and checks supporting deactivate-then-delete.
+
+Acceptance criteria:
+* Audit rows survive deletion of the target user
+* Index for newest-first paging
+
+Requirements: FR-ADM-05, FR-ADM-07
+Stories: US-32, US-34
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,6,backend,db,S5,,1d,2,S5-01,83,98,,,,,,
+83,Task,"S5-02 OpenAPI: admin routes (organizations, users, roles, audit)","Spec all admin endpoints with 403 problem for non-admins, workflow error mapping (502 identity failure), pagination.
+
+Acceptance criteria:
+* Spectral clean
+* Admin schemas separate from entry models
+
+Requirements: FR-ADM-01, FR-ADM-02, FR-ADM-03, NFR-DOC-01
+Stories: US-28, US-29
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,6,api,S5,,,1.5d,3,S5-02,84,85,,,,,,
+84,Story,S5-03 Organizations CRUD with delete-blocked-when-nonempty,"Create/rename/list/delete; unique names; delete returns 409 when anyone belongs.
+
+Acceptance criteria:
+* Delete of non-empty org refused with count
+* Duplicate name returns 409
+* Every change audited
+
+Requirements: FR-ADM-01, FR-ADM-07
+Stories: US-28
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,6,backend,api,S5,,1.5d,3,S5-03,88,,,,,,,
+85,Story,S5-04 admin-orchestrator Lambda and admin route wiring (ADR-0002),"Non-VPC Lambda validating the admin group claim and input, starting Step Functions Express executions synchronously; API Gateway admin routes with tighter throttling.
+
+Acceptance criteria:
+* Non-admin token gets 403 and no execution starts
+* Request ID propagated into the execution
+* Role has only StartSyncExecution on the admin state machines
+
+Requirements: FR-ADM-02, FR-ADM-03, NFR-SEC-02
+Stories: US-29, US-30
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,6,backend,infra,adr-0002,S5,2d,5,S5-04,86,,,,,,,
+86,Story,S5-05 identity Lambda: idempotent Cognito admin operations,"Operations: create or link user, set groups, disable/enable, delete, global sign-out, change email; each safe to retry.
+
+Acceptance criteria:
+* Calling any operation twice yields the same final state
+* Errors are typed for the state machine
+* Role limited to the pool ARN
+
+Requirements: FR-ADM-02, FR-ADM-03, FR-ADM-08
+Stories: US-29, US-30, US-35
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,6,backend,auth,adr-0002,S5,2d,5,S5-05,87,,,,,,,
+87,Story,"S5-06 Step Functions definitions: create, edit, role change with compensation","CDK-defined Express state machines with Retry/Catch and compensation steps (data reserve, identity, data commit).
+
+Acceptance criteria:
+* Failure injected at each step leaves DB and Cognito consistent
+* Execution history visible for audit
+* No state machine has wildcard IAM
+
+Requirements: FR-ADM-02, FR-ADM-03
+Stories: US-29, US-30
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,6,infra,adr-0002,S5,,2d,5,S5-06,88,,,,,,,
+88,Story,"S5-07 Data-step handlers: validate/reserve, commit, audit (user create, edit, roles)","VPC api handlers invoked by the workflows: re-verify the actor is an active admin in the DB, transactional writes, audit log entry, required organization on create.
+
+Acceptance criteria:
+* Demoted admin is refused at the data step
+* Organization required (400 otherwise)
+* Audit row written in the same transaction
+
+Requirements: FR-ADM-02, FR-ADM-03, FR-ADM-07
+Stories: US-29, US-30, US-34
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,6,backend,db,S5,,2d,5,S5-07,89,91,92,93,,,,
+89,Story,"S5-08 Deactivate and reactivate, with deactivated-user filtering everywhere","Workflow disables Cognito user and signs out; a shared SQL predicate/view hides deactivated users from lists, searches and schedules; data kept.
+
+Acceptance criteria:
+* Deactivated user cannot sign in or use existing token (S1-06 check)
+* Not listed anywhere
+* Reactivation restores access
+
+Requirements: FR-ADM-05, FR-ADM-09, FR-AUTH-05
+Stories: US-32
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,6,backend,infra,S5,,2d,5,S5-08,90,100,139,,,,,
+90,Story,S5-09 Permanent delete workflow (two-step),"Only for deactivated users; removes entries, clients, links, notifications, Cognito user; audit keeps display-name snapshot.
+
+Acceptance criteria:
+* Active user cannot be purged (409)
+* Cascade verified by tests
+* Audit snapshot present
+
+Requirements: FR-ADM-05, FR-ADM-07
+Stories: US-32
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,6,backend,db,S5,,2d,5,S5-09,97,,,,,,,
+91,Story,S5-10 Last-admin guard,"Within the transaction lock admin rows (SELECT ... FOR UPDATE) and refuse demote, deactivate or delete of the last active admin.
+
+Acceptance criteria:
+* Concurrent demotions of the last two admins: at most one succeeds
+* Clear problem+json explanation
+
+Requirements: FR-ADM-06
+Stories: US-33
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,6,backend,db,S5,,1.5d,3,S5-10,97,,,,,,,
+92,Story,S5-11 Email change re-invite workflow,"Edit email: new invitation, old email blocked immediately (Cognito and allowlist), first sign-in with new email re-binds to the same user_id.
+
+Acceptance criteria:
+* user_id and all data unchanged
+* Old email cannot sign in
+* Audit entry recorded
+
+Requirements: FR-ADM-08, FR-AUTH-03
+Stories: US-35
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,6,backend,auth,S5,,2d,5,S5-11,97,,,,,,,
+93,Story,S5-12 Admin API: organization change endpoint and audit log listing,"Change a user's organization (preview endpoint returns consequence counts, which S6-08 completes); GET /admin/audit paginated newest first.
+
+Acceptance criteria:
+* Preview returns counts (zero until S6)
+* Audit listing paginates
+* No endpoint exposes entries or notes (FR-ADM-10)
+
+Requirements: FR-ADM-04, FR-ADM-07, FR-ADM-10
+Stories: US-31, US-34, US-35
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,6,backend,api,S5,,1.5d,3,S5-12,94,105,,,,,,
+94,Story,"S5-13 Frontend admin: users list, create/edit dialogs","Users table with search, status filter, create/edit dialogs including required organization and email-change warning.
+
+Acceptance criteria:
+* Form validates required organization
+* Email change shows consequences
+* Deactivated users distinguishable
+
+Requirements: FR-ADM-02, FR-ADM-08
+Stories: US-29, US-35
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,6,frontend,S5,,,2d,5,S5-13,95,,,,,,,
+95,Story,"S5-14 Frontend admin: organizations, roles and lifecycle actions","Organizations page, role toggles, deactivate, permanent delete with type-to-confirm, last-admin error display.
+
+Acceptance criteria:
+* Delete requires typing the person's name
+* Errors from guards are readable
+
+Requirements: FR-ADM-01, FR-ADM-03, FR-ADM-05, FR-ADM-06
+Stories: US-28, US-30, US-32, US-33
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,6,frontend,S5,,,1.5d,3,S5-14,96,,,,,,,
+96,Story,S5-15 Frontend admin: org-change confirmation and audit log page,"Consequences dialog before changing organization; audit log table.
+
+Acceptance criteria:
+* Nothing changes until confirmed
+* Dialog states link and pending-request effects
+* Audit page paginates
+
+Requirements: FR-ADM-04, FR-ADM-07
+Stories: US-31, US-34
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,6,frontend,S5,,,1.5d,3,S5-15,97,,,,,,,
+97,Task,"S5-16 Tests: workflow failure injection, admin authz negatives, E2E invite and role change","Integration tests per workflow with failures at each step; non-admin and cross-user negatives; Playwright for invite and role change.
+
+Acceptance criteria:
+* All compensation paths verified
+* Non-admin routes return 403
+* E2E passes in dev
+
+Requirements: FR-ADM-02, FR-ADM-03, FR-ADM-06, NFR-SEC-02
+Stories: US-29, US-30, US-33
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,6,test,e2e,security,S5,2d,5,S5-16,146,148,,,,,,
+98,Story,S6-01 Migration: supervision_links and notifications with DB-enforced rules,"Create tables; partial unique index (one pending/accepted per supervisee); supervisor<>supervisee check; trigger verifying supervisee and supervisor belong to the link's organization at pending/accepted.
+
+Acceptance criteria:
+* Cross-org insert fails in the DB
+* Second active link for a supervisee fails
+* Self-link fails
+
+Requirements: FR-SUP-02, FR-NOT-01
+Stories: US-14, US-26
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,7,backend,db,S6,,2d,5,S6-01,99,111,,,,,,
+99,Task,"S6-02 OpenAPI: supervisors, requests, links, notifications","Spec supervisor search, request create/cancel, inbox, accept/decline, end, notifications list/read/read-all/unread-count.
+
+Acceptance criteria:
+* Spectral clean
+* Search parameter lengths bounded
+
+Requirements: NFR-DOC-01, FR-SUP-01
+Stories: US-14
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,7,api,S6,,,1.5d,3,S6-02,100,104,138,,,,,
+100,Story,"S6-03 Supervisor search (same organization, first or last name)","GET /supervisors?search=&page= returns active supervisors in the actor's organization via a dedicated DTO; LIKE wildcards escaped; term capped; excludes self.
+
+Acceptance criteria:
+* Other-org supervisors never returned
+* Wildcard characters match literally
+* Deactivated supervisors absent
+
+Requirements: FR-SUP-01, NFR-SEC-01
+Stories: US-14
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,7,backend,api,security,S6,1.5d,3,S6-03,101,106,,,,,,
+101,Story,S6-04 Create and cancel supervision request,"Create request (same org, no active link, not self), cancel pending; notification to the supervisor created in the same transaction.
+
+Acceptance criteria:
+* Second request while one is pending returns 409
+* Cross-org request returns 403/404
+* Notification row exists
+
+Requirements: FR-SUP-02, FR-NOT-01
+Stories: US-14, US-25, US-27
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,7,backend,api,S6,,2d,5,S6-04,102,106,,,,,,
+102,Story,"S6-05 Supervisor inbox, accept and decline with race-safe transaction","List pending requests; accept re-checks organization and link state inside the transaction (SELECT ... FOR UPDATE); decline needs no reason; notify supervisee.
+
+Acceptance criteria:
+* Accept after cancel or org change returns 409 'no longer valid'
+* Concurrent accept/cancel: consistent result
+* Notifications created
+
+Requirements: FR-SUP-03, FR-SUP-05, FR-NOT-01
+Stories: US-18
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,7,backend,api,db,S6,2d,5,S6-05,103,107,113,125,,,,
+103,Story,S6-06 End a supervision link,"Supervisee, supervisor or admin ends an accepted link; history and past approvals kept; notify the other party.
+
+Acceptance criteria:
+* Third parties get 403/404
+* Supervisee can request again after ending
+* Past entry approvals unaffected
+
+Requirements: FR-SUP-04, FR-REV-08
+Stories: US-27
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,7,backend,api,S6,,1.5d,3,S6-06,105,109,,,,,,
+104,Story,S6-07 Notifications service and endpoints,"In-transaction create helper, list (paginated), mark read, mark all read, unread-count; payload jsonb with typed schemas per event.
+
+Acceptance criteria:
+* Only own notifications accessible
+* Unread count correct under concurrent reads
+* Payloads contain pseudonym-safe data only
+
+Requirements: FR-NOT-01, FR-NOT-02, FR-NOT-03
+Stories: US-25, US-26
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,7,backend,api,S6,,2d,5,S6-07,101,107,108,114,,,,
+105,Story,S6-08 Organization change ends links and cancels requests (completes FR-ADM-04),"Hook in the admin org-change data step: end the user's link, cancel pending requests, and end all supervisees' links if the user is a supervisor; preview counts feed the confirmation dialog; notify affected users.
+
+Acceptance criteria:
+* Counts in preview equal actual effects
+* Supervisor org change ends all supervisee links
+* All effects in one transaction
+
+Requirements: FR-ADM-04, FR-SUP-02
+Stories: US-31
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,7,backend,db,S6,,1.5d,3,S6-08,110,,,,,,,
+106,Story,S6-09 Frontend: Find a supervisor page,"Searchable list of supervisors with Request supervision / Request pending + cancel states and disabled states per rules.
+
+Acceptance criteria:
+* Search by first or last name
+* Button states match FR-SUP-01
+* Empty state explained
+
+Requirements: FR-SUP-01, FR-SUP-02
+Stories: US-14
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,7,frontend,S6,,,2d,5,S6-09,109,,,,,,,
+107,Story,S6-10 Frontend: supervisor Requests page and nav badge,"Pending requests with Accept/Decline; badge count in navigation visible only to supervisors.
+
+Acceptance criteria:
+* Accept/Decline update the list and badge
+* Stale request error handled gracefully
+
+Requirements: FR-SUP-03
+Stories: US-18, US-25
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,7,frontend,S6,,,1.5d,3,S6-10,110,,,,,,,
+108,Story,"S6-11 Frontend: notification polling, badge and inbox page","TanStack Query polling about every 60 s plus refetch on window focus; badge; inbox with mark read and mark all.
+
+Acceptance criteria:
+* No polling while the tab is hidden beyond focus refetch
+* Badge updates after actions
+* Inbox keyboard accessible
+
+Requirements: FR-NOT-02, FR-NOT-03
+Stories: US-25, US-26
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,7,frontend,S6,,,2d,5,S6-11,110,,,,,,,
+109,Story,S6-12 Frontend: 'No active supervisor' banner and my-supervision controls,"Banner linking to Find a supervisor when no accepted link; panel to see current supervisor, cancel pending request, end link.
+
+Acceptance criteria:
+* Banner hidden when a link is accepted
+* End link asks for confirmation
+
+Requirements: FR-SUP-06, FR-SUP-04
+Stories: US-16, US-27
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,7,frontend,S6,,,1.5d,3,S6-12,110,,,,,,,
+110,Task,"S6-13 Tests: DB constraint tests, cross-organization negatives, concurrency, E2E request-accept","Integration tests for constraints and races; negative tests for cross-org lookup/request; Playwright: request, accept, notification badge.
+
+Acceptance criteria:
+* All negative tests pass
+* Concurrent accept/cancel/org-change deterministic
+* E2E passes
+
+Requirements: FR-SUP-02, FR-SUP-05, NFR-SEC-02, NFR-SEC-06
+Stories: US-14, US-18, US-25
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,7,test,e2e,security,S6,2d,5,S6-13,,,,,,,,
+111,Story,S7-01 Migration: entry_status_history and approved-entry immutability backstop,"Create entry_status_history (changed_by nullable plus name snapshot); trigger preventing UPDATE/DELETE of approved entries except by the revert path; status check constraint.
+
+Acceptance criteria:
+* Direct SQL update of an approved entry fails
+* History survives user deletion
+
+Requirements: FR-REV-04, FR-REV-06
+Stories: US-24, US-15
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,8,backend,db,S7,,1.5d,3,S7-01,112,,,,,,,
+112,Task,S7-02 OpenAPI: review endpoints,"Spec review queue, approve, reject (reason), bulk approve, revert-approval (reason), history; conflict and skipped-entry schemas.
+
+Acceptance criteria:
+* Spectral clean
+* Bulk report schema lists skipped ids with reasons
+
+Requirements: FR-REV-01, FR-REV-02, FR-REV-03
+Stories: US-21, US-22, US-23
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,8,api,S7,,,1d,2,S7-02,113,,,,,,,
+113,Story,S7-03 Review queue endpoint (supervisor scope),"GET /review/entries for accepted supervisees only: status/supervisee/date filters, sort allowlist, pagination, supervisor DTO.
+
+Acceptance criteria:
+* Non-supervisee entries never returned
+* Ended links excluded
+* Unknown sort returns 400
+
+Requirements: FR-REV-01, FR-DASH-02, NFR-SEC-02
+Stories: US-21
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,8,backend,api,security,S7,1.5d,3,S7-03,114,123,127,,,,,
+114,Story,S7-04 Approve and reject single entries,"Conditional UPDATE WHERE status='pending'; reject requires reason; history row; notification to supervisee; 409 if not pending.
+
+Acceptance criteria:
+* Double approve: one wins, other 409
+* Non-supervisee returns 404
+* Empty reason returns 400
+
+Requirements: FR-REV-01, FR-REV-06, FR-NOT-01
+Stories: US-21, US-24
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,8,backend,api,db,S7,2d,5,S7-04,115,116,117,118,125,132,,
+115,Story,S7-05 Bulk approve,"Approve by id list or date range for one supervisee in one transaction, conditional updates, report skipped entries with reasons, Idempotency-Key.
+
+Acceptance criteria:
+* Skipped entries reported (not pending, not owned)
+* Whole call atomic for approvals chosen
+* Replay returns the same report
+
+Requirements: FR-REV-02
+Stories: US-22
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,8,backend,api,db,S7,2d,5,S7-05,122,,,,,,,
+116,Story,S7-06 Revert approval,"Supervisor reverts to Pending with required reason; unlocks; history; notification; progress changes accordingly.
+
+Acceptance criteria:
+* Reason required
+* Only the owning accepted supervisor may revert
+* Entry editable again
+
+Requirements: FR-REV-03, FR-REV-06, FR-NOT-01
+Stories: US-23
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,8,backend,api,S7,,1.5d,3,S7-06,119,122,,,,,,
+117,Story,S7-07 Entry locking and rejected-edit-to-pending in the service layer,"Update/delete refused for approved (423/409 with explanation); saving an edited rejected entry sets Pending, clears review fields and notifies the supervisor.
+
+Acceptance criteria:
+* Approved entry edit/delete refused
+* Rejected edit becomes Pending and history records it
+
+Requirements: FR-REV-04, FR-REV-05, FR-REV-06
+Stories: US-15
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,8,backend,S7,,,1.5d,3,S7-07,119,120,,,,,,
+118,Story,S7-08 Entry history endpoint,"GET /entries/{id}/history visible to the owner and the owning accepted supervisor.
+
+Acceptance criteria:
+* Third parties get 404
+* Entries ordered by time
+
+Requirements: FR-REV-06
+Stories: US-24
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,8,backend,api,S7,,1d,2,S7-08,121,,,,,,,
+119,Task,S7-09 Goal progress responds to status changes: integration tests,"Verify approve, reject, revert and rejected-edit change approved/pending sums correctly via the S3 aggregates.
+
+Acceptance criteria:
+* Approve moves hours from pending to approved bar
+* Revert reverses it
+* Reject removes from pending
+
+Requirements: FR-GOAL-03, FR-REV-03
+Stories: US-09, US-23
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,8,test,S7,,,1d,2,S7-09,124,,,,,,,
+120,Story,"S7-10 Frontend: status chips, reasons, locked-row UX, status filter","Pending/Approved/Rejected chips with reason text, disabled edit/delete with explanation for approved, status filter on entries.
+
+Acceptance criteria:
+* Chips have accessible names
+* Rejected reason visible
+* Filter by status works
+
+Requirements: FR-REV-07, FR-REV-04, FR-REV-05
+Stories: US-15
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,8,frontend,S7,,,2d,5,S7-10,121,,,,,,,
+121,Story,S7-11 Frontend: entry history drawer,"Drawer listing who changed what, when, from/to, and reason.
+
+Acceptance criteria:
+* Keyboard accessible
+* Empty history handled
+
+Requirements: FR-REV-06
+Stories: US-24
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,8,frontend,S7,,,1d,2,S7-11,124,,,,,,,
+122,Story,S7-12 Frontend: reusable review dialogs and bulk action bar,"Reason-required reject and revert dialogs, bulk selection bar with skipped-entry report; shared with S8.
+
+Acceptance criteria:
+* Empty reason blocked client-side and server-side
+* Report readable
+* RTL tests with MSW
+
+Requirements: FR-REV-01, FR-REV-02, FR-REV-03
+Stories: US-21, US-22, US-23
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,8,frontend,S7,,,2d,5,S7-12,123,130,,,,,,
+123,Story,S7-13 Frontend: supervisor review queue page,"Page listing pending (and approved for revert) entries across accepted supervisees with approve, reject, bulk approve and revert.
+
+Acceptance criteria:
+* Works for the supervisor persona flow end to end
+* Updates the list and notifications
+* axe clean
+
+Requirements: FR-REV-01, FR-REV-02, FR-REV-03
+Stories: US-21, US-22, US-23
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,8,frontend,S7,,,2d,5,S7-13,124,,,,,,,
+124,Task,"S7-14 Tests: concurrency, authz negatives, E2E approve/reject/revert","Integration tests for double-approve and bulk races, supervisor-on-non-supervisee, ended-link access; Playwright critical path.
+
+Acceptance criteria:
+* All negatives return 403/404
+* E2E passes in dev
+
+Requirements: FR-REV-01, FR-REV-02, FR-REV-03, FR-REV-04, NFR-SEC-06
+Stories: US-21, US-22, US-23
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,8,test,e2e,security,S7,2d,5,S7-14,,,,,,,,
+125,Story,S8-01 Supervisees list endpoint with pending counts,"OpenAPI plus GET /supervisees returning accepted supervisees (name, pending count, last entry date) via a supervisor DTO; SQL aggregates.
+
+Acceptance criteria:
+* Only accepted links listed
+* Pending counts correct
+* Paginated
+
+Requirements: FR-DASH-01, FR-DASH-03
+Stories: US-19
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,9,backend,api,S8,,1.5d,3,S8-01,126,128,,,,,,
+126,Story,S8-02 Supervisee summary endpoint,"GET /supervisees/{id}/summary: per-goal approved vs pending hours, pending and rejected counts, last entry date, reusing the S3 aggregates scoped by the authz relationship check.
+
+Acceptance criteria:
+* Non-supervisee returns 404
+* Ended link returns 404
+* Numbers equal the supervisee's own progress view
+
+Requirements: FR-DASH-01, NFR-SEC-02
+Stories: US-19
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,9,backend,api,security,S8,2d,5,S8-02,127,129,,,,,,
+127,Story,S8-03 Supervisee entries endpoint,"GET /supervisees/{id}/entries with filters, sort allowlist, pagination (reuses S7-03 query shape); notes visible to supervisors by design.
+
+Acceptance criteria:
+* Sort allowlist enforced
+* Cross-supervisor access refused
+* Pagination default 50
+
+Requirements: FR-DASH-02, NFR-SEC-01
+Stories: US-20
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,9,backend,api,S8,,1.5d,3,S8-03,130,,,,,,,
+128,Story,S8-04 Frontend: supervisee list and selector,"Supervisees page sorted by pending count with search; selecting opens the detail view (URL-driven).
+
+Acceptance criteria:
+* Deep link to a supervisee works
+* Empty state when no supervisees
+
+Requirements: FR-DASH-01, FR-DASH-03
+Stories: US-19
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,9,frontend,S8,,,1.5d,3,S8-04,129,,,,,,,
+129,Story,S8-05 Frontend: supervisee summary cards,"Read-only goal cards (reusing ProgressBar) plus counts and last entry date.
+
+Acceptance criteria:
+* Matches API values
+* aria-valuetext correct
+
+Requirements: FR-DASH-01
+Stories: US-19
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,9,frontend,S8,,,1.5d,3,S8-05,130,,,,,,,
+130,Story,S8-06 Frontend: drill-down entries list with review actions,"Entries table for the selected supervisee with filters, sorting, pagination and approve/reject/bulk/revert via S7 components.
+
+Acceptance criteria:
+* Actions update summary and list
+* Reasons required where specified
+
+Requirements: FR-DASH-02, FR-REV-01, FR-REV-02, FR-REV-03
+Stories: US-20, US-21, US-22, US-23
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,9,frontend,S8,,,2d,5,S8-06,131,,,,,,,
+131,Task,"S8-07 Tests: authz negatives, E2E and axe for the dashboard","Non-supervisee, ended-link and cross-org negatives; Playwright path from supervisee list to approval; axe.
+
+Acceptance criteria:
+* Negatives pass
+* E2E passes
+* axe clean
+
+Requirements: NFR-SEC-06, FR-DASH-01, FR-DASH-02
+Stories: US-19, US-20
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,9,test,e2e,security,S8,2d,5,S8-07,146,149,,,,,,
+132,Task,S9-01 OpenAPI: celebrations list and acknowledge,"GET /goals/celebrations returns uncelebrated crossed milestones per goal; POST /goals/celebrations/ack records the highest acknowledged percent.
+
+Acceptance criteria:
+* Spectral clean
+* Schema excludes On-site
+
+Requirements: FR-MS-01, FR-MS-02
+Stories: US-13
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,10,api,S9,,,1d,2,S9-01,133,135,,,,,,
+133,Story,S9-02 Milestone computation service,"Compute highest newly crossed milestone (25/50/75/100) from approved hours versus last_celebrated_percent; never lowers the stored value (revert does not reset it).
+
+Acceptance criteria:
+* Table-driven tests incl. multi-crossing, revert then re-approve, target change
+* On-site never celebrates
+
+Requirements: FR-MS-01, FR-MS-02
+Stories: US-13
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,10,backend,S9,,,1.5d,3,S9-02,134,,,,,,,
+134,Story,S9-03 Celebration endpoints with atomic acknowledge,"Conditional update of last_celebrated_percent (only increases); concurrent acks idempotent.
+
+Acceptance criteria:
+* Two tabs acknowledging concurrently produce one celebration
+* Value never decreases
+
+Requirements: FR-MS-02
+Stories: US-13
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,10,backend,api,db,S9,1.5d,3,S9-03,136,,,,,,,
+135,Story,S9-04 Frontend: celebration banner and confetti,"Solid-color banner cycling gold, lime, red with the specified messages; confetti canvas disabled under prefers-reduced-motion; dismissible; focus managed.
+
+Acceptance criteria:
+* No gradients
+* Messages match CLAUDE.md §7.3
+* Reduced motion shows banner only
+* Contrast >= 4.5:1
+
+Requirements: FR-MS-03
+Stories: US-13
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,10,frontend,a11y,S9,,2d,5,S9-04,136,,,,,,,
+136,Story,S9-05 Frontend: celebration orchestration on app load,"On load fetch celebrations, show them one at a time (highest per goal), acknowledge after display, never replay on reload.
+
+Acceptance criteria:
+* Reload does not replay
+* Failure to acknowledge does not loop forever
+* Multiple goals queue in order
+
+Requirements: FR-MS-01, FR-MS-02
+Stories: US-13
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,10,frontend,S9,,,1.5d,3,S9-05,137,,,,,,,
+137,Task,"S9-06 Tests: replay protection, revert and re-approve, E2E","Backend integration and Playwright: approve to cross 25%, celebrate once, reload, revert, re-approve.
+
+Acceptance criteria:
+* No replay in any scenario
+* E2E passes
+
+Requirements: FR-MS-02, FR-MS-03
+Stories: US-13
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,10,test,e2e,S9,,1.5d,3,S9-06,150,151,,,,,,
+138,Task,S10-01 OpenAPI: peer and schedule DTOs,"Spec GET /schedules/peers?search= and GET /schedules/{userId}?weekStart= with whitelisted schemas (date, start, end, category only), weekend count, 400 on non-Monday.
+
+Acceptance criteria:
+* Schedule schema has no reference to the entry model
+* Spectral clean
+
+Requirements: FR-SCH-03, FR-SCH-02, NFR-SEC-03
+Stories: US-38
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,11,api,security,S10,,1d,2,S10-01,139,141,,,,,,
+139,Story,S10-02 Peer relationship queries,"Static queries: users sharing the same accepted supervisor; supervisor to accepted supervisees; deactivated excluded; search escaped and capped.
+
+Acceptance criteria:
+* Non-peer excluded
+* Ended-link peers excluded
+* Wildcards literal
+
+Requirements: FR-SCH-01, NFR-SEC-01
+Stories: US-36
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,11,backend,db,security,S10,1.5d,3,S10-02,140,141,,,,,,
+140,Story,S10-03 Peers search endpoint,"GET /schedules/peers returns only the peer group (no global directory) with names; stricter throttling.
+
+Acceptance criteria:
+* Result limited to peer group
+* Tighter throttle configured
+
+Requirements: FR-SCH-01
+Stories: US-36
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,11,backend,api,S10,,1.5d,3,S10-03,142,,,,,,,
+141,Story,S10-04 Week schedule endpoint with whitelisted DTO,"GET /schedules/{userId}?weekStart=: authorize peer relationship; return Monday to Friday blocks (date, start, end, category) only; hide rejected and needs-time; count weekend entries.
+
+Acceptance criteria:
+* Response never contains client, notes, hours, on-site or status
+* weekStart not Monday returns 400
+* Non-peer returns 404
+* Weekend count correct
+
+Requirements: FR-SCH-02, FR-SCH-03, FR-SCH-04, NFR-SEC-03
+Stories: US-37, US-38
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,11,backend,api,security,S10,2d,5,S10-04,143,,,,,,,
+142,Story,S10-05 Frontend: peer search and selection with URL state,"Team Schedules page with search box, peer list, ?user= and ?week= URL state.
+
+Acceptance criteria:
+* Reload restores selection
+* No global directory shown
+
+Requirements: FR-SCH-01, FR-SCH-05
+Stories: US-36
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,11,frontend,S10,,,1.5d,3,S10-05,143,,,,,,,
+143,Story,S10-06 Frontend: Monday to Friday week grid and week picker,"Time-block grid with category colors, previous/next/this week, 'N entries on weekend not shown' hint.
+
+Acceptance criteria:
+* Defaults to current week
+* Blocks placed at the right times
+* Hint text exact
+
+Requirements: FR-SCH-02, FR-SCH-04, FR-SCH-05
+Stories: US-37
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,11,frontend,S10,,,2d,5,S10-06,144,,,,,,,
+144,Story,S10-07 Frontend: responsive day list and keyboard accessibility,"Grid collapses to a day list on narrow screens; keyboard navigable; non-color cues for categories.
+
+Acceptance criteria:
+* Usable at 360px width
+* Tab/arrow navigation works
+* axe clean
+
+Requirements: FR-SCH-05, NFR-A11Y-01
+Stories: US-37
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,11,frontend,a11y,S10,,1.5d,3,S10-07,145,,,,,,,
+145,Task,"S10-08 Tests: DTO leak tests, non-peer access, E2E, axe","Go tests asserting banned fields never serialize (reflection and JSON golden), ended link, cross-org; Playwright path for two peers.
+
+Acceptance criteria:
+* Leak test fails if a banned field is added
+* E2E passes
+
+Requirements: NFR-SEC-03, NFR-SEC-06, FR-SCH-03
+Stories: US-38, US-37
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,11,test,e2e,security,S10,2d,5,S10-08,146,147,149,151,155,,,
+146,Task,S11-01 Authorization negative test suite (six required cases),"Cross-organization requests, cross-organization supervisor lookup, non-peer schedule, supervisor acting on non-supervisee, non-admin on admin routes, admin reading entries without a link; run against real PostgreSQL in CI.
+
+Acceptance criteria:
+* All six pass in CI
+* Suite fails if a new route lacks an authz test (route inventory check)
+
+Requirements: NFR-SEC-02, NFR-SEC-06
+Stories: US-44
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,12,test,security,S11,,2d,5,S11-01,150,,,,,,,
+147,Task,"S11-02 Injection suite across every text, search, sort and import input","Generated from the OpenAPI spec: payloads (' OR 1=1 --, '; DROP TABLE, quotes, backslashes, %, _) against all string inputs, plus crafted .md rows.
+
+Acceptance criteria:
+* Suite enumerates inputs from the spec so new inputs are covered automatically
+* No data or behavior change
+* Failures print the offending route
+
+Requirements: NFR-SEC-01
+Stories: US-43
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,12,test,security,adr-0006,S11,2d,5,S11-02,157,,,,,,,
+148,Task,S11-03 Database privilege and IAM policy review tests,"Tests proving app_rw cannot run DDL; IAM policies have no wildcards on data actions; cdk-nag or equivalent clean with documented exceptions.
+
+Acceptance criteria:
+* app_rw DDL attempt fails
+* Policy review recorded
+* Exceptions listed with reasons
+
+Requirements: NFR-SEC-01, NFR-SEC-04
+Stories: US-43
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,12,security,infra,adr-0001,S11,1.5d,3,S11-03,154,157,,,,,,
+149,Task,S11-04 Load sanity and index review,"k6 script at 50 users and 20,000 entries; EXPLAIN review of list, aggregate and schedule queries; verify reserved concurrency versus connection limit.
+
+Acceptance criteria:
+* p95 under 500 ms (warm)
+* No sequential scans on hot paths
+* Cold start under 2 s measured
+
+Requirements: NFR-PERF-01, NFR-REL-01
+Stories: US-45
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,12,test,perf,S11,,2d,5,S11-04,152,153,,,,,,
+150,Task,S11-05 Assemble and stabilise full E2E suite in the pipeline,"All critical-path Playwright tests (sign-in, log, request, accept, approve/reject/revert, schedule, admin invite and role change, import) run in the dev smoke stage with retries policy and artifacts.
+
+Acceptance criteria:
+* Suite green three runs in a row
+* Runtime under 15 minutes
+* Flake policy documented
+
+Requirements: NFR-OPS-02
+Stories: US-45
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,12,e2e,ci,S11,,2d,5,S11-05,158,,,,,,,
+151,Task,S11-06 Accessibility audit and fixes,"axe on all key pages plus manual keyboard and screen-reader pass of the schedule grid, progress bars, dialogs; fix findings.
+
+Acceptance criteria:
+* No serious/critical axe violations
+* Manual checklist signed off
+
+Requirements: NFR-A11Y-01
+Stories: US-45
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,12,a11y,frontend,S11,,2d,5,S11-06,158,,,,,,,
+152,Task,S11-07 Observability polish and log redaction check,"CloudWatch dashboard, alarm tuning, request-id tracing across Lambda and Step Functions, test that logs never contain notes or client names.
+
+Acceptance criteria:
+* Redaction test passes
+* Dashboard shows errors, latency, throttles, DB connections
+
+Requirements: NFR-OPS-01, NFR-OPS-04
+Stories: US-42
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,12,ops,security,S11,,1.5d,3,S11-07,156,,,,,,,
+153,Task,S11-08 Cost verification against the $50 budget,"Compare actual Cost Explorer or pricing-calculator numbers to the estimate; evaluate optional scheduled stop of the dev database.
+
+Acceptance criteria:
+* Report shows monthly projection under $50
+* Decision on dev DB stop recorded
+
+Requirements: NFR-COST-01
+Stories: US-41
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,12,cost,S11,,,1d,2,S11-08,158,,,,,,,
+154,Task,S11-09 Backup and restore drill,"Restore a prod-like snapshot to a temporary instance, run migrations and smoke tests, delete the instance.
+
+Acceptance criteria:
+* Restore time recorded
+* Runbook updated with exact steps
+
+Requirements: NFR-REL-01
+Stories: US-45
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,12,ops,S11,,,1.5d,3,S11-09,156,,,,,,,
+155,Task,S11-10 End-user guide (non-technical) and in-app help link,"Plain-language guide for trainees, supervisors and admins covering the screens in this app with fictional screenshots; link from the app header.
+
+Acceptance criteria:
+* Reviewed by a non-technical reader
+* Uses only pseudonyms
+* Link present in the app
+
+Requirements: NFR-DOC-01
+Stories: US-45
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Medium,12,docs,S11,,,1.5d,3,S11-10,158,,,,,,,
+156,Task,"S11-11 Runbook final: deploy, rollback, restore, rotate, add admin, CA bundle","Complete operational runbook with failure playbooks for pipeline, migration, Cognito, and DB connection exhaustion.
+
+Acceptance criteria:
+* Each playbook tested once in dev
+* Linked from README
+
+Requirements: NFR-DOC-01, NFR-OPS-02
+Stories: US-45
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,12,docs,ops,S11,,1.5d,3,S11-11,158,,,,,,,
+157,Task,"S11-12 Security review: dependency scan, CSP, secrets scan","Run govulncheck, npm audit, secret scanning, CSP violation review, header scan; triage findings.
+
+Acceptance criteria:
+* No high/critical open findings or documented exceptions
+* Secrets scan clean across repos
+
+Requirements: NFR-SEC-05
+Stories: US-43, US-45
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",High,12,security,S11,,,1d,2,S11-12,158,,,,,,,
+158,Task,"S11-13 Go-live checklist, doc finalisation and prod approval","Update CLAUDE.md and ADR statuses, confirm open questions closed, verify checklist, owner approves the prod stage.
+
+Acceptance criteria:
+* All ADRs Accepted
+* CLAUDE.md matches the built system
+* Prod release approved and smoke-tested
+
+Requirements: NFR-DOC-01
+Stories: US-45
+
+Definition of Done: implementation, validation (automated tests), documentation (OpenAPI/CLAUDE.md as needed).",Highest,12,docs,release,S11,,1d,2,S11-13,,,,,,,,

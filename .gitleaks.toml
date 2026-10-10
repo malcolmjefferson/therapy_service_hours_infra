@@ -1,0 +1,6 @@
+# Secret-scan configuration (SEC-61). Uses the built-in gitleaks rules.
+# Add an allowlist entry only with a comment explaining why the match is not a secret.
+title = "therapy_service_hours"
+
+[extend]
+useDefault = true

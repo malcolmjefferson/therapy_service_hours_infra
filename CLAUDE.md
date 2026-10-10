@@ -19,7 +19,7 @@
 6. **Budget guard.** The target is under **$50/month for both environments combined**. Do not add any of the following without explicit approval: NAT Gateway, RDS Proxy, VPC interface endpoints, load balancers (ALB/NLB), Multi-AZ databases, additional databases, paid third-party services. See section 4.
 7. **Data guard.** Client data is **pseudonyms or initials only**. Never put real names in code, fixtures, tests, logs, or docs. Never commit secrets.
 8. **Scannable communication.** Use Markdown headers, bold key terms, and bullets in PRs and docs.
-9. **Engineering standards.** Follow `docs/standards/` (planning pack; copied into each repo root by ticket S0-01, until then at `../docs/standards/`):
+9. **Engineering standards.** Follow `docs/standards/` (planning pack, copied into each repo root by ticket S0-01):
    - `01-go-coding-standards.md` (`GO-NN`) and `02-react-coding-standards.md` (`FE-NN`), both including **SOLID** rules
    - `03-architecture-standards.md` (`ARC-NN`) and `04-security-standards.md` (`SEC-NN`)
    - **MUST** rules block a merge; **SHOULD** rules need a one-line reason in the PR to skip. The checklist at the end of each relevant document is part of the Definition of Done. Departing from a **MUST** needs an ADR.

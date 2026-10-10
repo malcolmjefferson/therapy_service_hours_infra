@@ -1,0 +1,10 @@
+#!/bin/sh
+# Secret scan on staged changes (SEC-61). Enable once per clone:
+#   git config core.hooksPath .githooks
+# Fails closed: a missing scanner blocks the commit instead of silently skipping it.
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is not installed, so the secret scan cannot run (SEC-61)." >&2
+  echo "Install it (https://github.com/gitleaks/gitleaks), then commit again." >&2
+  exit 1
+fi
+exec gitleaks git --pre-commit --staged --redact --no-banner --config .gitleaks.toml

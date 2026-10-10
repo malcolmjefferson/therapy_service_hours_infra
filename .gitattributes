@@ -1,0 +1,7 @@
+# Normalize line endings so Windows and Linux (CodeBuild) checkouts match.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.woff binary
+*.woff2 binary
+*.ico binary
