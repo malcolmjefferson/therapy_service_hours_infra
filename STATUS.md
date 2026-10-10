@@ -19,7 +19,7 @@
 | S0-06 | Budget-guard synth assertion | done | [infra #3](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/3) |  |
 | S0-07 | CDK network and database constructs | done | [infra #6](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/6) | Code merged; first dev deploy of the data stack pending (owner runs it) |
 | S0-08 | Database role bootstrap custom resource (app_rw, migrator, rds_iam) | done | [infra #7](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/7) | Runs with the dev data-stack deploy |
-| S0-11 | CDK api construct: API Gateway HTTP API, api Lambda, throttling, logs | not started | - |  |
+| S0-11 | CDK api construct: API Gateway HTTP API, api Lambda, throttling, logs | in review | infra PR (this one) | Synth-tested; reaches dev with the app-stack deploy |
 | S0-12 | CDK web construct: S3 + OAC, CloudFront, /api/* behavior, SPA rewrite, headers policy | not started | - |  |
 | S0-14 | Pipeline stack: CDK Pipelines, three CodeConnections sources, build stage | not started | - | Owner authorizes CodeConnections in the console |
 | S0-15 | Pipeline: deploy dev (data, migrate, app, frontend) and smoke test | not started | - |  |
