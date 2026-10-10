@@ -60,11 +60,11 @@ Open the dev and prod URLs: the Status page shows the API version and database c
 
 **Description**
 
-Owner creates the three private GitHub repos under malcolmjefferson; add CLAUDE.md, CODEOWNERS, PR template (Markdown headers/bullets), branch protection on main.
+Owner creates the three public GitHub repos under malcolmjefferson; add CLAUDE.md, CODEOWNERS, PR template (Markdown headers/bullets), branch protection on main.
 
 **Acceptance criteria**
 
-- [ ] Three private repos exist with the exact names in CLAUDE.md §3
+- [ ] Three public repos exist with the exact names in CLAUDE.md §3
 - [ ] main requires PR + passing checks
 - [ ] CLAUDE.md and docs/ copied into each repo root
 - [ ] No secrets or real names committed (secret-scan pre-commit hook added)
