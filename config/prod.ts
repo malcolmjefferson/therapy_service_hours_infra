@@ -6,6 +6,7 @@ import { APP_REGION, EnvConfig } from './types';
 export const prodConfig: EnvConfig = {
   envName: 'prod',
   region: APP_REGION,
+  availabilityZones: ['us-west-2a', 'us-west-2b'],
   owner: 'malcolmjefferson',
   logRetention: RetentionDays.ONE_MONTH,
   database: {
