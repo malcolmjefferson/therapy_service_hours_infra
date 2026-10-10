@@ -23,6 +23,7 @@
    - `01-go-coding-standards.md` (`GO-NN`) and `02-react-coding-standards.md` (`FE-NN`), both including **SOLID** rules
    - `03-architecture-standards.md` (`ARC-NN`) and `04-security-standards.md` (`SEC-NN`)
    - **MUST** rules block a merge; **SHOULD** rules need a one-line reason in the PR to skip. The checklist at the end of each relevant document is part of the Definition of Done. Departing from a **MUST** needs an ADR.
+10. **Status tracking.** Each repo keeps `STATUS.md` current: a short summary at the top and one row per ticket touching the repo (ID, title, status, PR links, notes). Update it in the **same PR** that changes a ticket's state; rows describe the state once that PR merges (**not started**, **in progress**, **in review**, **done**).
 
 ### Decision status legend
 
