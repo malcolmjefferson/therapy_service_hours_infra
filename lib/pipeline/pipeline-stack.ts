@@ -45,6 +45,7 @@ export interface PipelineStackProps extends StackProps {
  *   format, tests, API drift gate, build) in parallel, then infra synth (type check, tests,
  *   `cdk synth` with the budget guard) using the backend binaries. Any failure stops the run.
  * - Self-mutation: the pipeline updates itself from the infra repo before deploying.
+ * - Each environment ends with a smoke test (scripts/smoke.sh, then the frontend's Playwright spec).
  * - Failures notify the owner through SNS.
  *
  * The connection is created PENDING; the owner authorizes it once in the console (an owner action).
@@ -254,12 +255,26 @@ export class PipelineStack extends Stack {
     });
   }
 
-  /** Runs scripts/smoke.sh against the environment's CloudFront URL; a failure stops the run. */
-  private smokeStep(stage: TherapyServiceHoursStage, config: EnvConfig): pipelines.ShellStep {
-    return new pipelines.ShellStep(`Smoke-${config.envName}`, {
+  /**
+   * Smoke test of the environment's CloudFront URL; a failure stops the run, so a broken dev never
+   * reaches the prod approval. First scripts/smoke.sh (curl, quick to diagnose), then the frontend's
+   * Playwright spec (S0-20): a real browser loads the SPA, and the security headers are asserted by
+   * name and value. The spec comes from the same frontend commit that was just deployed.
+   */
+  private smokeStep(stage: TherapyServiceHoursStage, config: EnvConfig): pipelines.CodeBuildStep {
+    return new pipelines.CodeBuildStep(`Smoke-${config.envName}`, {
       input: this.sources.infra,
+      additionalInputs: { '../frontend': this.sources.frontend },
+      partialBuildSpec: codebuild.BuildSpec.fromObject({ phases: { install: { 'runtime-versions': { nodejs: '22' } } } }),
       envFromCfnOutputs: { URL: stage.webStack.urlOutput },
-      commands: ['bash scripts/smoke.sh "$URL"'],
+      commands: [
+        'bash scripts/smoke.sh "$URL"',
+        'cd ../frontend',
+        'npm ci',
+        'npx playwright install --with-deps chromium',
+        'SMOKE_URL="$URL" npm run e2e',
+      ],
+      timeout: Duration.minutes(20),
     });
   }
 
