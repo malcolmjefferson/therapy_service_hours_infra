@@ -3,7 +3,9 @@ import { ENVIRONMENTS } from '../config';
 import { resolveAccount } from '../lib/account';
 import { TherapyServiceHoursStage } from '../lib/app-stage';
 import { resolveArtifacts } from '../lib/artifacts';
+import { PipelineStack } from '../lib/pipeline/pipeline-stack';
 import { synthesisErrors } from '../lib/synth-errors';
+import { APP_NAME, APP_REGION, prodConfig } from '../config';
 
 const app = new App();
 
@@ -27,6 +29,16 @@ for (const config of Object.values(ENVIRONMENTS)) {
     env: { account, region: config.region },
   });
 }
+
+// The release pipeline (S0-14, ADR-0005). The standalone stages above stay for manual deploys of a
+// single stack (scripts/deploy.sh); the pipeline deploys the same stacks by the same names.
+new PipelineStack(app, 'Pipeline', {
+  stackName: `${APP_NAME}-pipeline`,
+  env: { account, region: APP_REGION },
+  account,
+  artifacts,
+  notificationEmail: prodConfig.alerts.email,
+});
 
 const errors = synthesisErrors(app.synth());
 if (errors.length > 0) {

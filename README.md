@@ -66,6 +66,27 @@ Every alarm also notifies when it returns to OK. Thresholds live in `lib/app/ale
 aws cloudwatch set-alarm-state --alarm-name therapy-service-hours-dev-api-5xx --state-value ALARM --state-reason "manual test"
 ```
 
+## Release pipeline (S0-14, ADR-0005)
+
+`lib/pipeline/pipeline-stack.ts` defines one CDK Pipelines pipeline, `therapy-service-hours` (CodePipeline V2, **queued** runs):
+
+1. **Source:** `main` of all three repos through one GitHub CodeConnections connection. A merge to any of them starts a run.
+2. **Build** (parallel, fail fast): backend (`go vet`, `go test`, arm64 Lambda binaries), frontend (`npm audit`, lint, type check, format, tests, **API drift gate**, build), then infra synth (type check, tests, `cdk synth` with the budget guard) using the backend binaries.
+3. **UpdatePipeline:** self-mutation from the infra repo.
+4. **Assets**, then **Dev:** data → app → web.
+
+Failures (and, from S0-16, approvals) email the owner through the `therapy-service-hours-pipeline` SNS topic.
+
+**One-time owner setup:**
+
+1. Deploy the pipeline stack once from the deploy checkout: `EXPECTED_AWS_ACCOUNT=<account> BACKEND_DIST=<backend build> scripts/deploy.sh Pipeline`.
+2. In the console (**Developer Tools > Settings > Connections**), open `therapy-service-hours-github` (status *Pending*), choose **Update pending connection** and authorize the GitHub app for the three repos only (SEC-74).
+3. Confirm the SNS subscription email.
+
+After that the pipeline deploys itself; manual deploys stop.
+
+**Estimated cost:** with about 20 runs a month, about **$2-4/month**. Each run uses about 20 build minutes on `general1.small` ($0.005/min; the first 100 minutes a month are free) and about 30 CodePipeline V2 action-minutes ($0.002/min; the first 100 free). The artifact bucket and notifications cost cents.
+
 ## Manual deploys (until the pipeline takes over)
 
 Deploy only from a **dedicated, clean checkout of `origin/main`**, never from a working checkout with feature branches. `scripts/deploy.sh` enforces this (clean tree, HEAD == origin/main, `EXPECTED_AWS_ACCOUNT` and `BACKEND_DIST` set) and deploys exactly one stack:
@@ -84,6 +105,7 @@ config/           Typed per-environment settings (the only place dev and prod di
 lib/app-stage.ts  One environment: data, app and web stacks plus mandatory tags
 lib/app/          Stacks and constructs by concern (network.ts, database.ts)
 lib/guards/       Synth-time guards (budget)
+lib/pipeline/     Release pipeline (CDK Pipelines)
 test/             Vitest tests (CDK assertions)
 ```
 

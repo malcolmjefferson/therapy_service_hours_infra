@@ -21,7 +21,7 @@
 | S0-08 | Database role bootstrap custom resource (app_rw, migrator, rds_iam) | in review | [infra #7](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/7), fix: infra PR (this one) | First dev deploy failed (dynamic reference not resolved in custom resources); fixed by the deploy-time provider (ADR-0001 amendment) |
 | S0-11 | CDK api construct: API Gateway HTTP API, api Lambda, throttling, logs | done | [infra #12](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/12) | Synth-tested; reaches dev with the app-stack deploy |
 | S0-12 | CDK web construct: S3 + OAC, CloudFront, /api/* behavior, SPA rewrite, headers policy | done | [infra #13](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/13) | Synth-tested; header and 404 checks run after the dev web-stack deploy |
-| S0-14 | Pipeline stack: CDK Pipelines, three CodeConnections sources, build stage | not started | - | Owner authorizes CodeConnections in the console |
+| S0-14 | Pipeline stack: CDK Pipelines, three CodeConnections sources, build stage | in review | infra PR (this one) | Owner: deploy the pipeline stack once and authorize the GitHub connection |
 | S0-15 | Pipeline: deploy dev (data, migrate, app, frontend) and smoke test | not started | - |  |
 | S0-16 | Pipeline: manual approval, pre-prod snapshot, deploy prod, SNS notifications | not started | - |  |
 | S0-17 | CI security and quality gates | done | [infra #5](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/5) | Dependabot ignore rules for held-back majors: frontend #10, infra #9 (in review) |
