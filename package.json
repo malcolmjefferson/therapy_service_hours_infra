@@ -10,7 +10,7 @@
   "scripts": {
     "typecheck": "tsc",
     "test": "vitest run",
-    "synth": "cdk synth --quiet",
+    "synth": "cdk synth --quiet \"**\"",
     "cdk": "cdk"
   },
   "devDependencies": {

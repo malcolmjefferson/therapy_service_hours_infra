@@ -2,6 +2,7 @@ import { App } from 'aws-cdk-lib/core';
 import { ENVIRONMENTS } from '../config';
 import { resolveAccount } from '../lib/account';
 import { TherapyServiceHoursStage } from '../lib/app-stage';
+import { synthesisErrors } from '../lib/synth-errors';
 
 const app = new App();
 
@@ -18,4 +19,10 @@ for (const config of Object.values(ENVIRONMENTS)) {
     config,
     env: { account, region: config.region },
   });
+}
+
+const errors = synthesisErrors(app.synth());
+if (errors.length > 0) {
+  console.error(`Synthesis failed with ${errors.length} error(s):\n${errors.map((e) => `  ${e}`).join('\n')}`);
+  process.exit(1);
 }
