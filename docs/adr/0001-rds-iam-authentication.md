@@ -45,6 +45,25 @@ The application connects to PostgreSQL with **RDS IAM authentication**.
 - Check: `app_rw` cannot `CREATE TABLE` (negative test, S11-03).
 - Check: no `rds-db:connect` on `*`.
 
+## Amendment (2026-10-10): delivering the master password to the role bootstrap
+
+**Problem found in the first dev deploy.** CloudFormation does **not** resolve Secrets Manager
+dynamic references inside custom-resource properties, so the bootstrap received the literal
+`{{resolve:secretsmanager:...}}` text and authentication failed. A VPC Lambda cannot fetch the secret
+itself (no NAT, no interface endpoints, budget guard).
+
+**Decision (owner approved option A, 2026-10-10).** The bootstrap is split in two:
+
+- **`dbbootstrap-provider`** (deploy-time custom-resource handler, **outside the VPC**) reads only the
+  RDS-managed master secret (`secretsmanager:GetSecretValue` on that one ARN) and invokes the worker.
+- **`dbbootstrap`** (worker, **in the VPC**) receives the connection in that single direct invocation
+  payload and runs the idempotent role SQL over verify-full TLS.
+
+The password never appears in a template, an environment variable or a log line, and no runtime
+(request-serving) Lambda reads Secrets Manager. Rejected: a Secrets Manager interface endpoint (about
+$14/month per environment, budget guard) and passing the password in Lambda environment variables
+(SEC-60). GO-70 is updated to allow this one deploy-time read.
+
 ## Open items
 
 - Confirm the RDS CA bundle update procedure (annual check in the runbook).

@@ -249,7 +249,7 @@ These rules carry out the non-negotiable parameterized-query requirement (CLAUDE
 |---|---|
 | GO-68 | **MUST:** configuration comes from environment variables set by CDK, parsed into a typed `config.Config` once at startup, and validated. Missing or invalid values fail the cold start with a clear log line. |
 | GO-69 | **MUST NOT:** hard-code account IDs, ARNs, hostnames, user pool IDs or emails in Go code. |
-| GO-70 | **MUST NOT:** read secrets at runtime in VPC Lambdas (ADR-0001). The identity Lambda is the only function that may read Secrets Manager, and only if a later ADR requires it. |
+| GO-70 | **MUST NOT:** read secrets at runtime in VPC Lambdas (ADR-0001). The only functions that may read Secrets Manager are the deploy-time `dbbootstrap-provider` (outside the VPC, the RDS-managed master secret only; ADR-0001 amendment 2026-10-10) and the identity Lambda if a later ADR requires it. |
 
 ---
 
