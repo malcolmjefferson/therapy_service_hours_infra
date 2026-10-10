@@ -87,6 +87,16 @@ After that the pipeline deploys itself; manual deploys stop.
 
 **Estimated cost:** with about 20 runs a month, about **$2-4/month**. Each run uses about 20 build minutes on `general1.small` ($0.005/min; the first 100 minutes a month are free) and about 30 CodePipeline V2 action-minutes ($0.002/min; the first 100 free). The artifact bucket and notifications cost cents.
 
+## Manual deploys (until the pipeline takes over)
+
+Deploy only from a **dedicated, clean checkout of `origin/main`**, never from a working checkout with feature branches. `scripts/deploy.sh` enforces this (clean tree, HEAD == origin/main, `EXPECTED_AWS_ACCOUNT` and `BACKEND_DIST` set) and deploys exactly one stack:
+
+```bash
+git worktree add --detach ../therapy_service_hours_infra-deploy origin/main   # once
+cd ../therapy_service_hours_infra-deploy && git fetch origin && git checkout --detach origin/main && npm ci
+EXPECTED_AWS_ACCOUNT=<account> BACKEND_DIST=<backend build dir> scripts/deploy.sh dev/Data
+```
+
 ## Layout
 
 ```
