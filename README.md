@@ -8,6 +8,7 @@ AWS CDK (TypeScript) app: the stacks, the single release pipeline for all three 
 - **Engineering standards** (rules block merges): [docs/standards/](docs/standards/README.md)
 - **Decisions:** [docs/adr/](docs/adr/README.md)
 - **Backlog:** [docs/jira/](docs/jira/README.md)
+- **Operations** (deploy, approvals, pipeline failures, alarms, restore, migrations, budget): [docs/runbook.md](docs/runbook.md)
 
 ## First-time setup
 
@@ -73,8 +74,7 @@ aws cloudwatch set-alarm-state --alarm-name therapy-service-hours-dev-api-5xx --
 1. **Source:** `main` of all three repos through one GitHub CodeConnections connection. A merge to any of them starts a run.
 2. **Build** (parallel, fail fast): backend (`go vet`, `go test`, arm64 Lambda binaries), frontend (`npm audit`, lint, type check, format, tests, **API drift gate**, build), then infra synth (type check, tests, `cdk synth` with the budget guard) using the backend binaries.
 3. **UpdatePipeline:** self-mutation from the infra repo.
-4. **Assets**, then **Dev:** data → app → web.
-
+4. **Assets**, then **Dev:** data → migrate → app → web → frontend sync → **smoke** (`scripts/smoke.sh`, then the frontend's Playwright spec, S0-20). A smoke failure stops the run before the prod approval.
 5. **Prod (S0-16):** `ReleaseInfo` prints the three commits, then **manual approval** (`PromoteToProd`, emailed to the owner), then an **RDS snapshot** `therapy-service-hours-prod-pre-release-<timestamp>` (the newest three are kept), then data → migrate → app → web → frontend sync → smoke, using the **same assets** that passed dev. Rejecting leaves prod untouched.
 
 Failures, approval requests and successes email the owner through the `therapy-service-hours-pipeline` SNS topic.
@@ -107,10 +107,12 @@ EXPECTED_AWS_ACCOUNT=<account> BACKEND_DIST=<backend build dir> scripts/deploy.s
 bin/app.ts        CDK app entry: one stage per environment
 config/           Typed per-environment settings (the only place dev and prod differ, ARC-28)
 lib/app-stage.ts  One environment: data, app and web stacks plus mandatory tags
-lib/app/          Stacks and constructs by concern (network.ts, database.ts)
+lib/app/          Stacks and constructs by concern (network, database, roles, migrate, api, web, alerts)
 lib/guards/       Synth-time guards (budget)
 lib/pipeline/     Release pipeline (CDK Pipelines)
-test/             Vitest tests (CDK assertions)
+scripts/          smoke.sh (post-deploy smoke test)
+test/             Vitest tests (CDK assertions, smoke script)
+docs/runbook.md   Operating procedures (S0-21)
 ```
 
 ## Contributing
