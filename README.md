@@ -55,4 +55,4 @@ test/             Vitest tests (CDK assertions)
 - `main` is protected: changes go through a pull request with passing checks (ARC-49).
 - Work on a branch named after the ticket, for example `feat/S0-03-backend-skeleton`.
 - Fill in the PR template, including the standards checklists.
-- Client data is **pseudonyms or initials only**, everywhere (CLAUDE.md Â§0.7).
+- Client data is **pseudonyms or initials only**, everywhere (CLAUDE.md §0.7).
