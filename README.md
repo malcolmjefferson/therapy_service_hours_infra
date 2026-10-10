@@ -66,6 +66,16 @@ Every alarm also notifies when it returns to OK. Thresholds live in `lib/app/ale
 aws cloudwatch set-alarm-state --alarm-name therapy-service-hours-dev-api-5xx --state-value ALARM --state-reason "manual test"
 ```
 
+## Manual deploys (until the pipeline takes over)
+
+Deploy only from a **dedicated, clean checkout of `origin/main`**, never from a working checkout with feature branches. `scripts/deploy.sh` enforces this (clean tree, HEAD == origin/main, `EXPECTED_AWS_ACCOUNT` and `BACKEND_DIST` set) and deploys exactly one stack:
+
+```bash
+git worktree add --detach ../therapy_service_hours_infra-deploy origin/main   # once
+cd ../therapy_service_hours_infra-deploy && git fetch origin && git checkout --detach origin/main && npm ci
+EXPECTED_AWS_ACCOUNT=<account> BACKEND_DIST=<backend build dir> scripts/deploy.sh dev/Data
+```
+
 ## Layout
 
 ```
