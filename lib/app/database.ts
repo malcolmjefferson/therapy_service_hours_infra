@@ -70,7 +70,7 @@ export class Database extends Construct {
       iamAuthentication: true,
       parameterGroup,
       backupRetention: config.database.backupRetention,
-      deleteAutomatedBackups: false,
+      deleteAutomatedBackups: config.database.deleteAutomatedBackups,
       deletionProtection: config.database.deletionProtection,
       removalPolicy: config.database.removalPolicy,
       copyTagsToSnapshot: true,

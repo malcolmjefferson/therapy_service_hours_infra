@@ -19,5 +19,6 @@ export const prodConfig: EnvConfig = {
     backupRetention: Duration.days(7),
     deletionProtection: true,
     removalPolicy: RemovalPolicy.SNAPSHOT,
+    deleteAutomatedBackups: false,
   },
 };
