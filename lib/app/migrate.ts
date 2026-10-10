@@ -5,6 +5,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
+import { denyLogGroupCreation } from './lambda-role';
 import { EnvConfig } from '../../config';
 import { LambdaArtifacts } from '../artifacts';
 import { DATABASE_NAME } from './database';
@@ -59,6 +60,7 @@ export class Migrate extends Construct {
         DB_AUTH: 'iam',
       },
     });
+    denyLogGroupCreation(this.function, `/aws/lambda/${prefix}migrate`);
 
     this.function.addToRolePolicy(
       new iam.PolicyStatement({

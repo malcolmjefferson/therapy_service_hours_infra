@@ -11,7 +11,7 @@ function template(config = devConfig): Template {
   return Template.fromStack(buildStage(config).dataStack);
 }
 
-type Statement = { Action: string | string[]; Resource: unknown };
+type Statement = { Effect?: string; Action: string | string[]; Resource: unknown };
 
 function statementsOf(t: Template, roleNamePart: string): Statement[] {
   const roles = Object.entries(t.findResources('AWS::IAM::Role')).filter(([id]) => id.includes(roleNamePart)).map(([id]) => id);
@@ -45,7 +45,8 @@ describe('database role bootstrap (S0-08, ADR-0001 amendment)', () => {
       VpcConfig: Match.absent(),
       Environment: Match.absent(),
     });
-    const statements = statementsOf(t, 'DatabaseRolesProvider');
+    // Allowed actions only; the Deny on logs:CreateLogGroup is checked in lambda-roles.test.ts.
+    const statements = statementsOf(t, 'DatabaseRolesProvider').filter((s) => s.Effect !== 'Deny');
     const actions = statements.flatMap((s) => [s.Action].flat());
     expect(actions.sort()).toEqual(['lambda:InvokeFunction', 'secretsmanager:GetSecretValue']);
     const secretStatement = statements.find((s) => s.Action === 'secretsmanager:GetSecretValue');

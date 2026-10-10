@@ -7,6 +7,7 @@ import { Construct } from 'constructs';
 import { EnvConfig } from '../../config';
 import { LambdaArtifacts } from '../artifacts';
 import { DATABASE_NAME, Database } from './database';
+import { denyLogGroupCreation } from './lambda-role';
 import { Network } from './network';
 
 /**
@@ -87,6 +88,9 @@ export class DatabaseRoles extends Construct {
       new iam.PolicyStatement({ actions: ['secretsmanager:GetSecretValue'], resources: [database.masterSecretArn] }),
     );
     this.worker.grantInvoke(this.provider);
+    // The provider runs while the stack is deleted: it must not leave an orphaned log group behind.
+    denyLogGroupCreation(this.provider, `/aws/lambda/${prefix}db-bootstrap-provider`);
+    denyLogGroupCreation(this.worker, `/aws/lambda/${prefix}db-bootstrap`);
 
     this.resource = new CustomResource(this, 'Roles', {
       serviceToken: this.provider.functionArn,
