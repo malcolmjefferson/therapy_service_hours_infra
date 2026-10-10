@@ -45,7 +45,7 @@ Requires Node 22 or later.
 bin/app.ts        CDK app entry: one stage per environment
 config/           Typed per-environment settings (the only place dev and prod differ, ARC-28)
 lib/app-stage.ts  One environment: data, app and web stacks plus mandatory tags
-lib/app/          Stacks and constructs by concern
+lib/app/          Stacks and constructs by concern (network.ts, database.ts)
 lib/guards/       Synth-time guards (budget)
 test/             Vitest tests (CDK assertions)
 ```
