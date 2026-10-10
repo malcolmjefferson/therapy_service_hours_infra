@@ -10,6 +10,11 @@ updates:
     groups:
       aws-cdk:
         patterns: ["aws-cdk", "aws-cdk-lib", "constructs"]
+    ignore:
+      # Types must match the Node runtime major (22 LTS; CI and local use Node 22).
+      # Security updates still arrive.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
