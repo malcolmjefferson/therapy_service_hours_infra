@@ -18,6 +18,11 @@ export const APP_NAME = 'therapy-service-hours';
 export interface EnvConfig {
   readonly envName: EnvName;
   readonly region: typeof APP_REGION;
+  /**
+   * The two Availability Zones for the isolated subnets. Fixed in config so synth never needs an
+   * AWS lookup (and so works without credentials).
+   */
+  readonly availabilityZones: readonly [string, string];
   /** Value of the mandatory `owner` tag. */
   readonly owner: string;
   /** CloudWatch log retention for every log group (ARC-43). */
