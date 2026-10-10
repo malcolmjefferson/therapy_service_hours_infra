@@ -25,7 +25,7 @@
 | S0-15 | Pipeline: deploy dev (data, migrate, app, frontend) and smoke test | not started | - |  |
 | S0-16 | Pipeline: manual approval, pre-prod snapshot, deploy prod, SNS notifications | not started | - |  |
 | S0-17 | CI security and quality gates | done | [infra #5](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/5) | Dependabot ignore rules for held-back majors: frontend #10, infra #9 (in review) |
-| S0-18 | Alerts and budget: SNS email, $50 AWS Budget, CloudWatch alarms | not started | - |  |
+| S0-18 | Alerts and budget: SNS email, $50 AWS Budget, CloudWatch alarms | in review | infra PR (this one) | Pipeline failure notifications come with S0-14; owner confirms the SNS email after deploy |
 | S0-19 | OpenAPI pinned-copy sync and drift gate in frontend and pipeline | in progress | [frontend #5](https://github.com/malcolmjefferson/therapy_service_hours_frontend/pull/5) | Frontend part merged; the pipeline drift step comes with S0-14 |
 | S0-20 | Minimal Playwright smoke and header scan against dev | not started | - |  |
 | S0-21 | Runbook v0 and README per repo | not started | - |  |

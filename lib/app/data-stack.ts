@@ -1,7 +1,9 @@
 import { Stack, StackProps } from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 import { EnvConfig, resourcePrefix } from '../../config';
+import { ComparisonOperator } from 'aws-cdk-lib/aws-cloudwatch';
 import { LambdaArtifacts } from '../artifacts';
+import { ALARM_PERIOD, ALARM_THRESHOLDS, Alerts } from './alerts';
 import { Database } from './database';
 import { DatabaseRoles } from './database-roles';
 import { Network } from './network';
@@ -20,12 +22,14 @@ export class DataStack extends Stack {
   readonly network: Network;
   readonly database: Database;
   readonly roles: DatabaseRoles;
+  readonly alerts: Alerts;
   private readonly zones: readonly string[];
 
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
     this.zones = props.config.availabilityZones;
     const prefix = resourcePrefix(props.config);
+    this.alerts = new Alerts(this, 'Alerts', { config: props.config, prefix });
 
     this.network = new Network(this, 'Network', { prefix, availabilityZones: props.config.availabilityZones });
     this.database = new Database(this, 'Database', {
@@ -40,6 +44,35 @@ export class DataStack extends Stack {
       network: this.network,
       database: this.database,
       artifacts: props.artifacts,
+    });
+    this.addDatabaseAlarms(prefix);
+  }
+
+  private addDatabaseAlarms(prefix: string): void {
+    const db = this.database.instance;
+    this.alerts.alarm(this, 'RdsCpuAlarm', {
+      alarmName: `${prefix}rds-cpu`,
+      alarmDescription: `RDS CPU above ${ALARM_THRESHOLDS.rdsCpuPercent}% for 15 minutes`,
+      metric: db.metricCPUUtilization({ period: ALARM_PERIOD }),
+      threshold: ALARM_THRESHOLDS.rdsCpuPercent,
+      evaluationPeriods: 3,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+    });
+    this.alerts.alarm(this, 'RdsStorageAlarm', {
+      alarmName: `${prefix}rds-free-storage`,
+      alarmDescription: 'RDS free storage below 2 GiB',
+      metric: db.metricFreeStorageSpace({ period: ALARM_PERIOD, statistic: 'Minimum' }),
+      threshold: ALARM_THRESHOLDS.rdsFreeStorageBytes,
+      evaluationPeriods: 1,
+      comparisonOperator: ComparisonOperator.LESS_THAN_THRESHOLD,
+    });
+    this.alerts.alarm(this, 'RdsConnectionsAlarm', {
+      alarmName: `${prefix}rds-connections`,
+      alarmDescription: `RDS connections above ${ALARM_THRESHOLDS.rdsConnections} for 10 minutes (pool and reserved concurrency budget)`,
+      metric: db.metricDatabaseConnections({ period: ALARM_PERIOD, statistic: 'Maximum' }),
+      threshold: ALARM_THRESHOLDS.rdsConnections,
+      evaluationPeriods: 2,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
     });
   }
 
