@@ -1,12 +1,15 @@
 import { Stack, StackProps } from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 import { EnvConfig, resourcePrefix } from '../../config';
+import { LambdaArtifacts } from '../artifacts';
 import { Database } from './database';
+import { DatabaseRoles } from './database-roles';
 import { Network } from './network';
 
 /** Props for {@link DataStack}. */
 export interface DataStackProps extends StackProps {
   readonly config: EnvConfig;
+  readonly artifacts: LambdaArtifacts;
 }
 
 /**
@@ -16,6 +19,7 @@ export interface DataStackProps extends StackProps {
 export class DataStack extends Stack {
   readonly network: Network;
   readonly database: Database;
+  readonly roles: DatabaseRoles;
   private readonly zones: readonly string[];
 
   constructor(scope: Construct, id: string, props: DataStackProps) {
@@ -29,6 +33,13 @@ export class DataStack extends Stack {
       prefix,
       vpc: this.network.vpc,
       securityGroup: this.network.databaseSecurityGroup,
+    });
+    this.roles = new DatabaseRoles(this, 'DatabaseRoles', {
+      config: props.config,
+      prefix,
+      network: this.network,
+      database: this.database,
+      artifacts: props.artifacts,
     });
   }
 

@@ -39,6 +39,10 @@ Requires Node 22 or later.
 
 **Budget guard (ARC-29):** synth fails if an environment declares a NAT Gateway, RDS Proxy, interface VPC endpoint, load balancer, Multi-AZ or second database, RDS/Aurora cluster, or customer-managed KMS key (`lib/guards/budget-guard.ts`). The error names the rule and the construct path. Adding one of these needs the owner's approval and an ADR (CLAUDE.md §0.6).
 
+**Lambda code (`BACKEND_DIST`):** the Go Lambdas come from the backend build, laid out as `<dir>/<lambda>/bootstrap` (linux/arm64). With AWS credentials active, synth **refuses** unless `BACKEND_DIST` is set, so placeholder code can never be deployed. Without credentials (CI, tests) a placeholder asset is used. To run a credential-less synth on a machine that is logged in to AWS, hide the credentials: `AWS_SHARED_CREDENTIALS_FILE=/nonexistent AWS_CONFIG_FILE=/nonexistent npm run synth`.
+
+**Database roles (S0-08):** the `Custom::DatabaseRoles` resource runs the backend's `dbbootstrap` Lambda once per deploy to create `app_rw` and `migrator` (ADR-0001). The master password reaches it only through a CloudFormation dynamic reference. Bump `DATABASE_ROLES_REVISION` in `lib/app/database-roles.ts` to re-run it after a change.
+
 ## Layout
 
 ```

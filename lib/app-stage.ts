@@ -4,11 +4,14 @@ import { APP_NAME, EnvConfig, resourcePrefix } from '../config';
 import { AppStack } from './app/app-stack';
 import { DataStack } from './app/data-stack';
 import { WebStack } from './app/web-stack';
+import { LambdaArtifacts } from './artifacts';
 import { BudgetGuard } from './guards/budget-guard';
 
 /** Props for {@link TherapyServiceHoursStage}. */
 export interface TherapyServiceHoursStageProps extends StageProps {
   readonly config: EnvConfig;
+  /** Lambda code from the backend build (the same binaries for every environment). */
+  readonly artifacts: LambdaArtifacts;
 }
 
 /**
@@ -32,7 +35,7 @@ export class TherapyServiceHoursStage extends Stage {
     // Synth fails if the environment declares a resource the budget forbids (ARC-29).
     Aspects.of(this).add(new BudgetGuard());
 
-    this.dataStack = new DataStack(this, 'Data', { config, stackName: `${prefix}data` });
+    this.dataStack = new DataStack(this, 'Data', { config, artifacts: props.artifacts, stackName: `${prefix}data` });
     this.appStack = new AppStack(this, 'App', { config, stackName: `${prefix}app` });
     this.appStack.addStackDependency(this.dataStack, 'App resources use the network and database');
     this.webStack = new WebStack(this, 'Web', { config, stackName: `${prefix}web` });
