@@ -68,10 +68,51 @@ describe('release pipeline (S0-14, ADR-0005)', () => {
     }
   });
 
-  test('dev deploys data, then app, then web', () => {
+  test('dev: data, migrate, app, web, frontend sync, then smoke (ADR-0003, S0-15)', () => {
     const dev = stages(pipelineTemplate()).find((s) => s.Name === 'Dev');
-    const deploys = (dev?.Actions ?? []).filter((a) => a.Name.endsWith('.Deploy')).map((a) => a.Name);
-    expect(deploys).toEqual(['therapy-service-hours-dev-data.Deploy', 'therapy-service-hours-dev-app.Deploy', 'therapy-service-hours-dev-web.Deploy']);
+    const ordered = [...(dev?.Actions ?? [])]
+      .sort((x, y) => ((x as { RunOrder?: number }).RunOrder ?? 0) - ((y as { RunOrder?: number }).RunOrder ?? 0))
+      .map((a) => a.Name)
+      .filter((n) => !n.endsWith('.Prepare'));
+    expect(ordered).toEqual([
+      'therapy-service-hours-dev-data.Deploy',
+      'therapy-service-hours-dev-data.Migrate-dev',
+      'therapy-service-hours-dev-app.Deploy',
+      'therapy-service-hours-dev-web.Deploy',
+      'therapy-service-hours-dev-web.FrontendSync-dev',
+      'Smoke-dev',
+    ]);
+  });
+
+  test('the migrate step invokes only the dev migrate Lambda and fails unless it reports ok', () => {
+    const t = pipelineTemplate();
+    const specs = buildSpecs(t);
+    expect(specs).toContain('aws lambda invoke --function-name');
+    expect(specs).toContain('jq -r .status result.json');
+    expect(specs).toContain('result.json)');
+    expect(specs).toContain(' = ok');
+    const policies = JSON.stringify(t.findResources('AWS::IAM::Policy'));
+    expect(policies).toContain('function:therapy-service-hours-dev-migrate');
+    expect(policies).not.toMatch(/"lambda:InvokeFunction","Resource":"\*"/);
+  });
+
+  test('the frontend sync uploads immutable assets, then a no-cache index.html, then invalidates it', () => {
+    const specs = buildSpecs(pipelineTemplate());
+    const sync = specs.indexOf('aws s3 sync . ');
+    const index = specs.indexOf('aws s3 cp index.html');
+    const invalidate = specs.indexOf('aws cloudfront create-invalidation');
+    expect(sync).toBeGreaterThan(-1);
+    expect(index).toBeGreaterThan(sync);
+    expect(invalidate).toBeGreaterThan(index);
+    expect(specs).toContain('public, max-age=31536000, immutable');
+    expect(specs).toContain('--exclude index.html');
+    expect(specs).toContain('--paths /index.html');
+    const policies = JSON.stringify(pipelineTemplate().findResources('AWS::IAM::Policy'));
+    expect(policies).toContain(':s3:::therapy-service-hours-dev-web-*/*');
+  });
+
+  test('the smoke step runs scripts/smoke.sh against the dev URL', () => {
+    expect(buildSpecs(pipelineTemplate())).toContain('bash scripts/smoke.sh');
   });
 
   test('no customer-managed KMS key (crossAccountKeys off, budget guard)', () => {
