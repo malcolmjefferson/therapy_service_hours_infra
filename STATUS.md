@@ -27,7 +27,7 @@
 | S0-17 | CI security and quality gates | done | [infra #5](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/5) | Dependabot ignore rules for held-back majors: frontend #10, infra #9 (in review) |
 | S0-18 | Alerts and budget: SNS email, $50 AWS Budget, CloudWatch alarms | in review | [infra #14](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/14) | Pipeline failure notifications come with S0-14; owner confirms the SNS email after deploy |
 | S0-19 | OpenAPI pinned-copy sync and drift gate in frontend and pipeline | in progress | [frontend #5](https://github.com/malcolmjefferson/therapy_service_hours_frontend/pull/5) | Frontend part merged; the pipeline drift step comes with S0-14 |
-| S0-20 | Minimal Playwright smoke and header scan against dev | in review | [frontend #13](https://github.com/malcolmjefferson/therapy_service_hours_frontend/pull/13), infra PR (this one) | Pipeline smoke runs smoke.sh, then the frontend's Playwright spec; merge frontend #13 before the pipeline's first run |
-| S0-21 | Runbook v0 and README per repo | not started | - |  |
+| S0-20 | Minimal Playwright smoke and header scan against dev | in review | [frontend #13](https://github.com/malcolmjefferson/therapy_service_hours_frontend/pull/13), [infra #19](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/19) | Pipeline smoke runs smoke.sh, then the frontend's Playwright spec; merge frontend #13 before the pipeline's first run |
+| S0-21 | Runbook v0 and README per repo | in review | infra PR (this one), backend and frontend README PRs | `docs/runbook.md` here; restore steps marked (rehearse) until the S11 drill |
 
 Statuses: **not started**, **in progress**, **in review** (PR open), **done** (merged to main).
