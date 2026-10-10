@@ -5,8 +5,8 @@
 
 ## Summary (2026-10-10)
 
-- **Slice S0 (walking skeleton):** 7 done, 8 in review, 1 in progress, 0 not started (of 16 tickets touching this repo). Every S0 ticket has a PR.
-- **AWS:** account bootstrapped for CDK in us-west-2 (CDKToolkit). The dev data stack (VPC, RDS, database roles) is being redeployed by the owner from `origin/main`; nothing else is deployed.
+- **Slice S0 (walking skeleton):** 9 done, 6 in review, 1 in progress, 0 not started (of 16 tickets touching this repo). Every S0 ticket has a PR.
+- **AWS:** account bootstrapped for CDK in us-west-2 (CDKToolkit). The failed dev data stack is being deleted; the owner then redeploys it from `origin/main`. Nothing else is deployed.
 - **Next:** merge the stacked S0 PRs, deploy the pipeline stack once and authorize its GitHub connection (owner), then S1 (auth and invites).
 
 ## Tickets
