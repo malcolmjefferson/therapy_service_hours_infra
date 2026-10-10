@@ -8,6 +8,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
+import { denyLogGroupCreation } from './lambda-role';
 import { EnvConfig } from '../../config';
 import { LambdaArtifacts } from '../artifacts';
 import { DATABASE_NAME } from './database';
@@ -76,6 +77,7 @@ export class Api extends Construct {
         DB_AUTH: 'iam',
       },
     });
+    denyLogGroupCreation(this.function, `/aws/lambda/${prefix}api`);
 
     // rds-db:connect for app_rw on this instance only (ADR-0001, SEC-64).
     this.function.addToRolePolicy(

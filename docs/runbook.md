@@ -102,7 +102,8 @@ You receive "pipeline execution failed". Then:
 | Snapshot-prod | Snapshot quota or a pending snapshot | Check RDS → Snapshots; delete old manual snapshots outside the `pre-release-` prefix if over quota, then **Retry** |
 
 3. **Retry vs new run:** use **Retry** only for transient causes (throttling, a timeout, a just-fixed connection). For code problems, merge a fix; the queued run picks it up.
-4. A stack stuck in `UPDATE_ROLLBACK_FAILED`: CloudFormation console → **Continue update rollback**, skipping only the resource named in the error. Never delete a prod data stack to get unstuck.
+4. **"Log group ... already exists"** during early validation: a Lambda recreated its log group after the stack deleted it. Every named function now has an explicit Deny on `logs:CreateLogGroup` for its own log group, so this should not recur. If it does, check the group is empty (`storedBytes` 0) and delete it: `MSYS_NO_PATHCONV=1 aws logs delete-log-group --log-group-name <name>` (`MSYS_NO_PATHCONV` stops Git Bash rewriting the leading `/`).
+5. A stack stuck in `UPDATE_ROLLBACK_FAILED`: CloudFormation console → **Continue update rollback**, skipping only the resource named in the error. Never delete a prod data stack to get unstuck.
 
 ## 5. Rollback
 
