@@ -9,6 +9,12 @@ export const prodConfig: EnvConfig = {
   availabilityZones: ['us-west-2a', 'us-west-2b'],
   owner: 'malcolmjefferson',
   logRetention: RetentionDays.ONE_MONTH,
+  api: {
+    reservedConcurrency: 20,
+    throttle: { rateLimit: 50, burstLimit: 100 },
+    memoryMiB: 256,
+    logLevel: 'info',
+  },
   database: {
     backupRetention: Duration.days(7),
     deletionProtection: true,

@@ -36,7 +36,12 @@ export class TherapyServiceHoursStage extends Stage {
     Aspects.of(this).add(new BudgetGuard());
 
     this.dataStack = new DataStack(this, 'Data', { config, artifacts: props.artifacts, stackName: `${prefix}data` });
-    this.appStack = new AppStack(this, 'App', { config, stackName: `${prefix}app` });
+    this.appStack = new AppStack(this, 'App', {
+      config,
+      artifacts: props.artifacts,
+      data: this.dataStack,
+      stackName: `${prefix}app`,
+    });
     this.appStack.addStackDependency(this.dataStack, 'App resources use the network and database');
     this.webStack = new WebStack(this, 'Web', { config, stackName: `${prefix}web` });
     this.webStack.addStackDependency(this.appStack, 'CloudFront routes /api/* to the API');

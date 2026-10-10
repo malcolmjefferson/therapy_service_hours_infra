@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 
@@ -9,6 +9,8 @@ export type BackendLambda = 'api' | 'migrate' | 'dbbootstrap';
 export interface LambdaArtifacts {
   /** True when the code is a placeholder that must never be deployed. */
   readonly placeholder: boolean;
+  /** Build identifier reported by /healthz: the backend commit SHA from `<dir>/VERSION`. */
+  readonly version: string;
   code(name: BackendLambda): lambda.Code;
 }
 
@@ -20,8 +22,10 @@ const PLACEHOLDER_DIR = join(__dirname, 'artifacts', 'placeholder');
  * same binaries (ADR-0005).
  */
 export function backendArtifacts(dir: string): LambdaArtifacts {
+  const versionFile = join(dir, 'VERSION');
   return {
     placeholder: false,
+    version: existsSync(versionFile) ? readFileSync(versionFile, 'utf8').trim() || 'unversioned' : 'unversioned',
     code(name) {
       const bootstrap = join(dir, name, 'bootstrap');
       if (!existsSync(bootstrap)) {
@@ -34,7 +38,7 @@ export function backendArtifacts(dir: string): LambdaArtifacts {
 
 /** A stand-in asset so tests and credential-less CI can synth without a backend build. */
 export function placeholderArtifacts(): LambdaArtifacts {
-  return { placeholder: true, code: () => lambda.Code.fromAsset(PLACEHOLDER_DIR) };
+  return { placeholder: true, version: 'placeholder', code: () => lambda.Code.fromAsset(PLACEHOLDER_DIR) };
 }
 
 /**
