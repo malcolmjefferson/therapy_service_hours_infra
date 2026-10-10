@@ -211,7 +211,7 @@ Roles are **cumulative**: Supervisor and Admin are added on top of User. One acc
 ## 8. Constraints and dependencies
 
 - AWS region **us-west-2**; one account with `dev` and `prod`.
-- GitHub owner `malcolmjefferson`; three private repos (`therapy_service_hours_frontend`, `_backend`, `_infra`). **The owner creates these** and connects CodeConnections (a console click).
+- GitHub owner `malcolmjefferson`; three public repos (made public 2026-10-10) (`therapy_service_hours_frontend`, `_backend`, `_infra`). **The owner creates these** and connects CodeConnections (a console click).
 - A Google OAuth client must be created by the owner; its secret is stored in Secrets Manager (ticket S1-01).
 - Recommended designs that need an **Accepted** ADR before building: ADR-0001 to ADR-0006.
 
