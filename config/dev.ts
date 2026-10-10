@@ -15,6 +15,9 @@ export const devConfig: EnvConfig = {
     memoryMiB: 256,
     logLevel: 'info',
   },
+  alerts: {
+    email: 'malcolmj0415@gmail.com',
+  },
   web: {
     bucketRemovalPolicy: RemovalPolicy.DESTROY,
     autoDeleteObjects: true,

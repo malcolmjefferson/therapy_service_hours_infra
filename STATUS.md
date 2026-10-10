@@ -19,13 +19,13 @@
 | S0-06 | Budget-guard synth assertion | done | [infra #3](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/3) |  |
 | S0-07 | CDK network and database constructs | done | [infra #6](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/6) | Code merged; first dev deploy of the data stack pending (owner runs it) |
 | S0-08 | Database role bootstrap custom resource (app_rw, migrator, rds_iam) | in review | [infra #7](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/7), fix: infra PR (this one) | First dev deploy failed (dynamic reference not resolved in custom resources); fixed by the deploy-time provider (ADR-0001 amendment) |
-| S0-11 | CDK api construct: API Gateway HTTP API, api Lambda, throttling, logs | in review | [infra #12](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/12) | Synth-tested; reaches dev with the app-stack deploy |
-| S0-12 | CDK web construct: S3 + OAC, CloudFront, /api/* behavior, SPA rewrite, headers policy | in review | [infra #13](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/13) | Synth-tested; header and 404 checks run after the dev web-stack deploy |
+| S0-11 | CDK api construct: API Gateway HTTP API, api Lambda, throttling, logs | done | [infra #12](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/12) | Synth-tested; reaches dev with the app-stack deploy |
+| S0-12 | CDK web construct: S3 + OAC, CloudFront, /api/* behavior, SPA rewrite, headers policy | done | [infra #13](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/13) | Synth-tested; header and 404 checks run after the dev web-stack deploy |
 | S0-14 | Pipeline stack: CDK Pipelines, three CodeConnections sources, build stage | not started | - | Owner authorizes CodeConnections in the console |
 | S0-15 | Pipeline: deploy dev (data, migrate, app, frontend) and smoke test | not started | - |  |
 | S0-16 | Pipeline: manual approval, pre-prod snapshot, deploy prod, SNS notifications | not started | - |  |
 | S0-17 | CI security and quality gates | done | [infra #5](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/5) | Dependabot ignore rules for held-back majors: frontend #10, infra #9 (in review) |
-| S0-18 | Alerts and budget: SNS email, $50 AWS Budget, CloudWatch alarms | not started | - |  |
+| S0-18 | Alerts and budget: SNS email, $50 AWS Budget, CloudWatch alarms | in review | [infra #14](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/14) | Pipeline failure notifications come with S0-14; owner confirms the SNS email after deploy |
 | S0-19 | OpenAPI pinned-copy sync and drift gate in frontend and pipeline | in progress | [frontend #5](https://github.com/malcolmjefferson/therapy_service_hours_frontend/pull/5) | Frontend part merged; the pipeline drift step comes with S0-14 |
 | S0-20 | Minimal Playwright smoke and header scan against dev | not started | - |  |
 | S0-21 | Runbook v0 and README per repo | not started | - |  |

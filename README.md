@@ -43,6 +43,29 @@ Requires Node 22 or later.
 
 **Database roles (S0-08):** the `Custom::DatabaseRoles` resource creates `app_rw` and `migrator` once per deploy (ADR-0001, amended 2026-10-10). Its handler, `dbbootstrap-provider`, runs outside the VPC, reads only the RDS-managed master secret and invokes the `dbbootstrap` worker in the VPC directly; the password is never in the template, an environment variable or a log. (CloudFormation does not resolve Secrets Manager dynamic references in custom-resource properties.) Bump `DATABASE_ROLES_REVISION` in `lib/app/database-roles.ts` to re-run it after a change.
 
+## Alerts (S0-18)
+
+Each environment has an SNS topic `therapy-service-hours-<env>-alerts` emailing the owner. **Confirm the subscription email once per environment** after the first deploy.
+
+| Alarm | Fires when |
+|---|---|
+| `<env>-api-5xx` | 5 or more API Gateway 5xx responses in 5 minutes |
+| `<env>-api-lambda-errors` | 5 or more api Lambda errors in 5 minutes |
+| `<env>-api-lambda-throttles` | any api Lambda throttle in 5 minutes (reserved concurrency reached) |
+| `<env>-rds-cpu` | RDS CPU above 80% for 15 minutes |
+| `<env>-rds-free-storage` | RDS free storage below 2 GiB |
+| `<env>-rds-connections` | more than 60 connections for 10 minutes (budget: 20 api instances x 2) |
+
+Every alarm also notifies when it returns to OK. Thresholds live in `lib/app/alerts.ts` (`ALARM_THRESHOLDS`).
+
+**Budget:** prod defines the account-wide AWS Budget `therapy-service-hours-monthly` ($50/month) with alerts at 80% and 100% of actual spend and 100% of forecast, sent to the prod topic (SEC-82). AWS gives two budgets free; this account already has two, so this one costs about $0.02 a day.
+
+**Test an alarm** (sends a real email, then returns to OK on the next evaluation):
+
+```bash
+aws cloudwatch set-alarm-state --alarm-name therapy-service-hours-dev-api-5xx --state-value ALARM --state-reason "manual test"
+```
+
 ## Manual deploys (until the pipeline takes over)
 
 Deploy only from a **dedicated, clean checkout of `origin/main`**, never from a working checkout with feature branches. `scripts/deploy.sh` enforces this (clean tree, HEAD == origin/main, `EXPECTED_AWS_ACCOUNT` and `BACKEND_DIST` set) and deploys exactly one stack:
