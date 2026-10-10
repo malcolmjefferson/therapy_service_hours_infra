@@ -3,11 +3,13 @@ import { IConstruct } from 'constructs';
 import { EnvConfig } from '../config';
 import { PLACEHOLDER_ACCOUNT } from '../lib/account';
 import { TherapyServiceHoursStage } from '../lib/app-stage';
+import { placeholderArtifacts } from '../lib/artifacts';
 
 /** Builds one environment's stage with no AWS credentials, as CI does. */
 export function buildStage(config: EnvConfig, app: App = new App()): TherapyServiceHoursStage {
   return new TherapyServiceHoursStage(app, config.envName, {
     config,
+    artifacts: placeholderArtifacts(),
     env: { account: PLACEHOLDER_ACCOUNT, region: config.region },
   });
 }

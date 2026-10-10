@@ -47,20 +47,26 @@ describe('network (S0-07)', () => {
     }
   });
 
-  test('the database accepts 5432 only from the app security group', () => {
+  test('the database accepts 5432 only from security groups (app and role bootstrap)', () => {
     const rules = ingressRules(dataTemplate());
-    expect(rules).toHaveLength(1);
-    expect(rules[0]).toMatchObject({ IpProtocol: 'tcp', FromPort: 5432, ToPort: 5432 });
-    expect(rules[0]).toHaveProperty('SourceSecurityGroupId');
+    expect(rules).toHaveLength(2);
+    for (const rule of rules) {
+      expect(rule).toMatchObject({ IpProtocol: 'tcp', FromPort: 5432, ToPort: 5432 });
+      expect(rule).toHaveProperty('SourceSecurityGroupId');
+    }
   });
 
-  test('neither security group allows all outbound traffic', () => {
+  test('no security group allows all outbound traffic; the only 0.0.0.0/0 egress is HTTPS', () => {
     const t = dataTemplate();
-    for (const sg of Object.values(t.findResources('AWS::EC2::SecurityGroup'))) {
-      const egress = (sg as { Properties: { SecurityGroupEgress?: { CidrIp?: string }[] } }).Properties.SecurityGroupEgress ?? [];
-      for (const rule of egress) {
-        // CDK's "no outbound" marker is a single rule to 255.255.255.255/32 on an unused protocol.
-        expect(rule.CidrIp).not.toBe('0.0.0.0/0');
+    const egress = [
+      ...Object.values(t.findResources('AWS::EC2::SecurityGroup')).flatMap(
+        (sg) => (sg as { Properties: { SecurityGroupEgress?: Record<string, unknown>[] } }).Properties.SecurityGroupEgress ?? [],
+      ),
+      ...Object.values(t.findResources('AWS::EC2::SecurityGroupEgress')).map((r) => (r as { Properties: Record<string, unknown> }).Properties),
+    ];
+    for (const rule of egress) {
+      if (rule.CidrIp === '0.0.0.0/0') {
+        expect(rule).toMatchObject({ IpProtocol: 'tcp', FromPort: 443, ToPort: 443 });
       }
     }
   });
