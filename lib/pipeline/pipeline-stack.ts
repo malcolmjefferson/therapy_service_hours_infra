@@ -8,7 +8,7 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as pipelines from 'aws-cdk-lib/pipelines';
 import { Construct } from 'constructs';
-import { APP_NAME, devConfig, EnvConfig, resourcePrefix } from '../../config';
+import { APP_NAME, devConfig, EnvConfig, prodConfig, resourcePrefix } from '../../config';
 import { TherapyServiceHoursStage } from '../app-stage';
 import { LambdaArtifacts } from '../artifacts';
 import { BudgetGuard } from '../guards/budget-guard';
@@ -54,6 +54,7 @@ export class PipelineStack extends Stack {
   readonly frontendBuild: pipelines.CodeBuildStep;
   readonly sources: Record<keyof typeof REPOSITORIES, pipelines.CodePipelineSource>;
   readonly dev: TherapyServiceHoursStage;
+  readonly prod: TherapyServiceHoursStage;
   readonly topic: sns.Topic;
 
   constructor(scope: Construct, id: string, props: PipelineStackProps) {
@@ -154,6 +155,36 @@ export class PipelineStack extends Stack {
       post: [this.smokeStep(this.dev, devConfig)],
     });
 
+    // S0-16: prod gets the same synthesized assembly, so the same Lambda zips and templates tested in dev.
+    this.prod = new TherapyServiceHoursStage(this, 'Prod', {
+      config: prodConfig,
+      artifacts: props.artifacts,
+      env: { account: props.account, region: prodConfig.region },
+    });
+    const releaseInfo = new pipelines.CodeBuildStep('ReleaseInfo', {
+      env: {
+        INFRA_COMMIT: this.sources.infra.sourceAttribute('CommitId'),
+        BACKEND_COMMIT: this.sources.backend.sourceAttribute('CommitId'),
+        FRONTEND_COMMIT: this.sources.frontend.sourceAttribute('CommitId'),
+      },
+      commands: ['echo "Release candidate: infra $INFRA_COMMIT, backend $BACKEND_COMMIT, frontend $FRONTEND_COMMIT"'],
+    });
+    const approval = new pipelines.ManualApprovalStep('PromoteToProd', {
+      comment:
+        'Deploy to prod the exact artifacts that passed dev and its smoke test. The three commits are the source ' +
+        'revisions of this execution (also printed by the ReleaseInfo step). Rejecting leaves prod untouched.',
+    });
+    approval.addStepDependency(releaseInfo);
+    this.pipeline.addStage(this.prod, {
+      pre: [releaseInfo, approval],
+      stackSteps: [
+        // ADR-0003: snapshot, then data stack, then migrations, then the app.
+        { stack: this.prod.dataStack, pre: [this.snapshotStep(prodConfig)], post: [this.migrateStep(this.prod, prodConfig)] },
+        { stack: this.prod.webStack, post: [this.frontendSyncStep(this.prod, prodConfig)] },
+      ],
+      post: [this.smokeStep(this.prod, prodConfig)],
+    });
+
     this.pipeline.buildPipeline();
 
     this.topic = new sns.Topic(this, 'Notifications', {
@@ -229,6 +260,40 @@ export class PipelineStack extends Stack {
       input: this.sources.infra,
       envFromCfnOutputs: { URL: stage.webStack.urlOutput },
       commands: ['bash scripts/smoke.sh "$URL"'],
+    });
+  }
+
+  /**
+   * Takes a manual RDS snapshot of the environment's database before its data stack and migrations
+   * change anything (ADR-0003, ARC-35), waits until it is available, and keeps the newest three
+   * pre-release snapshots. On the very first deploy there is no instance yet, so it skips.
+   */
+  private snapshotStep(config: EnvConfig): pipelines.CodeBuildStep {
+    const instance = `${resourcePrefix(config)}postgres`;
+    const snapshotPrefix = `${resourcePrefix(config)}pre-release-`;
+    const arn = (resource: string, name: string) =>
+      this.formatArn({ service: 'rds', resource, resourceName: name, arnFormat: ArnFormat.COLON_RESOURCE_NAME });
+    return new pipelines.CodeBuildStep(`Snapshot-${config.envName}`, {
+      env: { INSTANCE: instance, SNAPSHOT_PREFIX: snapshotPrefix },
+      commands: [
+        'if ! aws rds describe-db-instances --db-instance-identifier "$INSTANCE" >/dev/null 2>&1; then echo "No instance $INSTANCE yet (first deploy): no snapshot needed"; exit 0; fi',
+        'SNAPSHOT="${SNAPSHOT_PREFIX}$(date -u +%Y%m%d-%H%M%S)"',
+        'aws rds create-db-snapshot --db-instance-identifier "$INSTANCE" --db-snapshot-identifier "$SNAPSHOT"',
+        'aws rds wait db-snapshot-available --db-snapshot-identifier "$SNAPSHOT"',
+        'echo "Snapshot $SNAPSHOT is available"',
+        // Keep the newest three pre-release snapshots (storage cost); automated backups are separate.
+        'aws rds describe-db-snapshots --db-instance-identifier "$INSTANCE" --snapshot-type manual --query "DBSnapshots[].[SnapshotCreateTime,DBSnapshotIdentifier]" --output text | grep -F "$SNAPSHOT_PREFIX" | sort -r | tail -n +4 | cut -f2 | xargs -r -n1 aws rds delete-db-snapshot --db-snapshot-identifier',
+      ],
+      timeout: Duration.minutes(60),
+      rolePolicyStatements: [
+        new iam.PolicyStatement({ actions: ['rds:DescribeDBInstances', 'rds:CreateDBSnapshot'], resources: [arn('db', instance)] }),
+        new iam.PolicyStatement({
+          actions: ['rds:CreateDBSnapshot', 'rds:DescribeDBSnapshots', 'rds:DeleteDBSnapshot', 'rds:AddTagsToResource'],
+          resources: [arn('snapshot', `${snapshotPrefix}*`)],
+        }),
+        // describe-db-snapshots filtered by instance is authorized against the instance as well.
+        new iam.PolicyStatement({ actions: ['rds:DescribeDBSnapshots'], resources: [arn('db', instance)] }),
+      ],
     });
   }
 }

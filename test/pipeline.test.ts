@@ -47,8 +47,58 @@ describe('release pipeline (S0-14, ADR-0005)', () => {
     }
   });
 
-  test('build, self-mutate, publish assets, then dev, in that order', () => {
-    expect(stages(pipelineTemplate()).map((s) => s.Name)).toEqual(['Source', 'Build', 'UpdatePipeline', 'Assets', 'Dev']);
+  test('build, self-mutate, publish assets, dev, then prod, in that order', () => {
+    expect(stages(pipelineTemplate()).map((s) => s.Name)).toEqual(['Source', 'Build', 'UpdatePipeline', 'Assets', 'Dev', 'Prod']);
+  });
+
+  test('prod (S0-16): release info, manual approval, snapshot, data, migrate, app, web, sync, smoke', () => {
+    const prod = stages(pipelineTemplate()).find((s) => s.Name === 'Prod');
+    const ordered = [...(prod?.Actions ?? [])]
+      .sort((x, y) => ((x as { RunOrder?: number }).RunOrder ?? 0) - ((y as { RunOrder?: number }).RunOrder ?? 0))
+      .map((a) => a.Name)
+      .filter((n) => !n.endsWith('.Prepare'));
+    expect(ordered).toEqual([
+      'ReleaseInfo',
+      'PromoteToProd',
+      'therapy-service-hours-prod-data.Snapshot-prod',
+      'therapy-service-hours-prod-data.Deploy',
+      'therapy-service-hours-prod-data.Migrate-prod',
+      'therapy-service-hours-prod-app.Deploy',
+      'therapy-service-hours-prod-web.Deploy',
+      'therapy-service-hours-prod-web.FrontendSync-prod',
+      'Smoke-prod',
+    ]);
+    const approval = prod?.Actions.find((a) => a.Name === 'PromoteToProd');
+    expect(approval?.ActionTypeId.Category).toBe('Approval');
+  });
+
+  test('the approval is preceded by a step printing all three commit SHAs', () => {
+    const specs = buildSpecs(pipelineTemplate());
+    expect(specs).toContain('Release candidate: infra $INFRA_COMMIT, backend $BACKEND_COMMIT, frontend $FRONTEND_COMMIT');
+  });
+
+  test('the prod snapshot waits until available, skips the first deploy, and keeps the newest three', () => {
+    const t = pipelineTemplate();
+    const specs = buildSpecs(t);
+    expect(specs).toContain('aws rds create-db-snapshot');
+    expect(specs).toContain('aws rds wait db-snapshot-available');
+    expect(specs).toContain('first deploy');
+    expect(specs).toContain('tail -n +4');
+    const policies = JSON.stringify(t.findResources('AWS::IAM::Policy'));
+    expect(policies).toContain(':db:therapy-service-hours-prod-postgres');
+    expect(policies).toContain(':snapshot:therapy-service-hours-prod-pre-release-*');
+    expect(policies).not.toMatch(/"rds:[A-Za-z]+","Resource":"\*"/);
+  });
+
+  test('prod uses the same Lambda code assets as dev (same assembly, promoted not rebuilt)', () => {
+    const specs = buildSpecs(pipelineTemplate());
+    // One backend build per run, and each asset is published once: prod's assets have the same content
+    // hashes as dev's, so the zips prod deploys are byte-for-byte the ones dev tested.
+    expect((specs.match(/go build/g) ?? []).length).toBe(1);
+    const published = specs.match(/cdk-assets --path [^ ]+ --verbose publish [^ ]+/g) ?? [];
+    expect(published.length).toBeGreaterThan(0);
+    expect(new Set(published).size).toBe(published.length);
+    expect(specs).not.toContain('assembly-Pipeline-Prod/');
   });
 
   test('backend, frontend and synth builds run every gate and fail fast', () => {
