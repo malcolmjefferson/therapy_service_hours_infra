@@ -1,0 +1,20 @@
+# Dependency updates (SEC-72): npm and GitHub Actions, weekly, grouped to limit PR noise.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      aws-cdk:
+        patterns: ["aws-cdk", "aws-cdk-lib", "constructs"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]

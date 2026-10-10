@@ -1,0 +1,38 @@
+name: ci
+
+# Infra PR gates: dependency audit, type check, CDK assertion tests and synth (which includes the
+# budget guard, ARC-29). Synth runs without AWS credentials and uses the placeholder account, so
+# nothing here can deploy. Deploys run in CodePipeline after merge (CLAUDE.md §13).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Dependency audit (SEC-71)
+        run: npm audit --audit-level=high
+      - name: Type check
+        run: npm run typecheck
+      - name: CDK assertion tests (ARC-34)
+        run: npm test
+      - name: Synth dev and prod, including the budget guard (ARC-29)
+        run: npm run synth
