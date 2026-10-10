@@ -161,8 +161,26 @@ describe('release pipeline (S0-14, ADR-0005)', () => {
     expect(policies).toContain(':s3:::therapy-service-hours-dev-web-*/*');
   });
 
-  test('the smoke step runs scripts/smoke.sh against the dev URL', () => {
-    expect(buildSpecs(pipelineTemplate())).toContain('bash scripts/smoke.sh');
+  test('the smoke step runs scripts/smoke.sh, then the Playwright spec against the same URL (S0-20)', () => {
+    const t = pipelineTemplate();
+    const projects = Object.values(t.findResources('AWS::CodeBuild::Project')).map((p) => JSON.stringify(p));
+    const smoke = projects.filter((p) => p.includes('bash scripts/smoke.sh'));
+    expect(smoke).toHaveLength(2); // dev and prod
+    for (const spec of smoke) {
+      const curl = spec.indexOf('bash scripts/smoke.sh');
+      const browsers = spec.indexOf('npx playwright install --with-deps chromium');
+      const e2e = spec.indexOf('npm run e2e');
+      expect(curl).toBeGreaterThan(-1);
+      expect(browsers).toBeGreaterThan(curl);
+      expect(e2e).toBeGreaterThan(browsers);
+      expect(spec).toContain('SMOKE_URL=');
+    }
+    // The spec comes from the frontend source of the same execution.
+    const devSmoke = stages(t)
+      .find((s) => s.Name === 'Dev')
+      ?.Actions.find((a) => a.Name === 'Smoke-dev') as unknown as { InputArtifacts: { Name: string }[] };
+    expect(devSmoke.InputArtifacts).toHaveLength(2);
+    expect(JSON.stringify(devSmoke.InputArtifacts)).toContain('therapy_service_hours_frontend');
   });
 
   test('no customer-managed KMS key (crossAccountKeys off, budget guard)', () => {
