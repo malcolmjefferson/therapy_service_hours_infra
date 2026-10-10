@@ -15,13 +15,16 @@ export interface WebStackProps extends StackProps {
  */
 export class WebStack extends Stack {
   readonly web: Web;
+  readonly urlOutput: CfnOutput;
+  readonly bucketNameOutput: CfnOutput;
+  readonly distributionIdOutput: CfnOutput;
 
   constructor(scope: Construct, id: string, props: WebStackProps) {
     super(scope, id, props);
     this.web = new Web(this, 'Web', { config: props.config, prefix: resourcePrefix(props.config), apiDomainName: props.apiDomainName });
 
-    new CfnOutput(this, 'Url', { description: 'Public URL', value: `https://${this.web.distribution.distributionDomainName}` });
-    new CfnOutput(this, 'BucketName', { description: 'SPA bucket (frontend sync target)', value: this.web.bucket.bucketName });
-    new CfnOutput(this, 'DistributionId', { description: 'For index.html invalidation', value: this.web.distribution.distributionId });
+    this.urlOutput = new CfnOutput(this, 'Url', { description: 'Public URL', value: `https://${this.web.distribution.distributionDomainName}` });
+    this.bucketNameOutput = new CfnOutput(this, 'BucketName', { description: 'SPA bucket (frontend sync target)', value: this.web.bucket.bucketName });
+    this.distributionIdOutput = new CfnOutput(this, 'DistributionId', { description: 'For index.html invalidation', value: this.web.distribution.distributionId });
   }
 }

@@ -128,3 +128,24 @@ describe('database (S0-07)', () => {
     expect(json).not.toMatch(/"Resource":\["\*"\]/);
   });
 });
+
+describe('migrate Lambda (S0-15, ADR-0003)', () => {
+  test('runs in the VPC as migrator with a 15-minute timeout and no secrets', () => {
+    const t = dataTemplate();
+    t.hasResourceProperties('AWS::Lambda::Function', {
+      FunctionName: 'therapy-service-hours-dev-migrate',
+      Runtime: 'provided.al2023',
+      Architectures: ['arm64'],
+      Timeout: 900,
+      VpcConfig: Match.objectLike({ SubnetIds: Match.anyValue() }),
+      Environment: { Variables: Match.objectLike({ DB_USER: 'migrator', DB_AUTH: 'iam', DB_NAME: 'therapy_service_hours' }) },
+    });
+    const json = JSON.stringify(t.toJSON());
+    expect(json).toContain('/migrator"');
+    expect(json).not.toMatch(/DB_PASSWORD/);
+  });
+
+  test('exposes its name for the pipeline step', () => {
+    dataTemplate().hasOutput('MigrateFunctionName', {});
+  });
+});

@@ -1,4 +1,4 @@
-import { Stack, StackProps } from 'aws-cdk-lib/core';
+import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 import { EnvConfig, resourcePrefix } from '../../config';
 import { ComparisonOperator } from 'aws-cdk-lib/aws-cloudwatch';
@@ -6,6 +6,7 @@ import { LambdaArtifacts } from '../artifacts';
 import { ALARM_PERIOD, ALARM_THRESHOLDS, Alerts } from './alerts';
 import { Database } from './database';
 import { DatabaseRoles } from './database-roles';
+import { Migrate } from './migrate';
 import { Network } from './network';
 
 /** Props for {@link DataStack}. */
@@ -23,6 +24,9 @@ export class DataStack extends Stack {
   readonly database: Database;
   readonly roles: DatabaseRoles;
   readonly alerts: Alerts;
+  readonly migrate: Migrate;
+  /** Name of the migrate Lambda, for the pipeline's migrate step (S0-15). */
+  readonly migrateFunctionOutput: CfnOutput;
   private readonly zones: readonly string[];
 
   constructor(scope: Construct, id: string, props: DataStackProps) {
@@ -45,6 +49,17 @@ export class DataStack extends Stack {
       database: this.database,
       artifacts: props.artifacts,
     });
+    this.migrate = new Migrate(this, 'Migrate', {
+      config: props.config,
+      prefix,
+      artifacts: props.artifacts,
+      vpc: this.network.vpc,
+      appSecurityGroup: this.network.appSecurityGroup,
+      database: this.database.instance,
+    });
+    // Migrations need the roles; the bootstrap runs first.
+    this.migrate.node.addDependency(this.roles);
+    this.migrateFunctionOutput = new CfnOutput(this, 'MigrateFunctionName', { value: this.migrate.function.functionName });
     this.addDatabaseAlarms(prefix);
   }
 

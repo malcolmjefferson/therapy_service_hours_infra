@@ -1,13 +1,14 @@
-import { Aspects, Aws, CfnOutput, Stack, StackProps, Tags } from 'aws-cdk-lib/core';
+import { ArnFormat, Aspects, Aws, CfnOutput, Duration, Stack, StackProps, Tags } from 'aws-cdk-lib/core';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as codeconnections from 'aws-cdk-lib/aws-codeconnections';
 import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
 import * as notifications from 'aws-cdk-lib/aws-codestarnotifications';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as pipelines from 'aws-cdk-lib/pipelines';
 import { Construct } from 'constructs';
-import { APP_NAME, devConfig } from '../../config';
+import { APP_NAME, devConfig, EnvConfig, resourcePrefix } from '../../config';
 import { TherapyServiceHoursStage } from '../app-stage';
 import { LambdaArtifacts } from '../artifacts';
 import { BudgetGuard } from '../guards/budget-guard';
@@ -144,7 +145,14 @@ export class PipelineStack extends Stack {
       artifacts: props.artifacts,
       env: { account: props.account, region: devConfig.region },
     });
-    this.pipeline.addStage(this.dev);
+    this.pipeline.addStage(this.dev, {
+      stackSteps: [
+        // ADR-0003: migrations run after the data stack and before the app stack.
+        { stack: this.dev.dataStack, post: [this.migrateStep(this.dev, devConfig)] },
+        { stack: this.dev.webStack, post: [this.frontendSyncStep(this.dev, devConfig)] },
+      ],
+      post: [this.smokeStep(this.dev, devConfig)],
+    });
 
     this.pipeline.buildPipeline();
 
@@ -169,6 +177,58 @@ export class PipelineStack extends Stack {
     new CfnOutput(this, 'ConnectionArn', {
       description: 'Authorize this GitHub connection once in the console (Developer Tools > Connections)',
       value: connection.attrConnectionArn,
+    });
+  }
+
+  /** Invokes the environment's migrate Lambda synchronously and fails unless it reports "ok" (ADR-0003). */
+  private migrateStep(stage: TherapyServiceHoursStage, config: EnvConfig): pipelines.CodeBuildStep {
+    const name = `${resourcePrefix(config)}migrate`;
+    return new pipelines.CodeBuildStep(`Migrate-${config.envName}`, {
+      envFromCfnOutputs: { FUNCTION_NAME: stage.dataStack.migrateFunctionOutput },
+      commands: [
+        'aws lambda invoke --function-name "$FUNCTION_NAME" --cli-read-timeout 900 --cli-binary-format raw-in-base64-out --payload "{}" result.json',
+        'cat result.json',
+        'test "$(jq -r .status result.json)" = ok',
+      ],
+      timeout: Duration.minutes(20),
+      rolePolicyStatements: [
+        new iam.PolicyStatement({
+          actions: ['lambda:InvokeFunction'],
+          resources: [this.formatArn({ service: 'lambda', resource: 'function', resourceName: name, arnFormat: ArnFormat.COLON_RESOURCE_NAME })],
+        }),
+      ],
+    });
+  }
+
+  /**
+   * Uploads the frontend build to the SPA bucket: hashed assets as immutable for a year first, then
+   * index.html as no-cache, then invalidates /index.html only (ADR-0004, ARC-42).
+   */
+  private frontendSyncStep(stage: TherapyServiceHoursStage, config: EnvConfig): pipelines.CodeBuildStep {
+    const bucketPattern = `arn:${Aws.PARTITION}:s3:::${resourcePrefix(config)}web-*`;
+    return new pipelines.CodeBuildStep(`FrontendSync-${config.envName}`, {
+      input: this.frontendBuild,
+      envFromCfnOutputs: { BUCKET: stage.webStack.bucketNameOutput, DISTRIBUTION_ID: stage.webStack.distributionIdOutput },
+      commands: [
+        'aws s3 sync . "s3://$BUCKET" --delete --exclude index.html --cache-control "public, max-age=31536000, immutable"',
+        'aws s3 cp index.html "s3://$BUCKET/index.html" --cache-control "no-cache" --content-type "text/html; charset=utf-8"',
+        'aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths /index.html',
+      ],
+      rolePolicyStatements: [
+        new iam.PolicyStatement({ actions: ['s3:ListBucket'], resources: [bucketPattern] }),
+        new iam.PolicyStatement({ actions: ['s3:PutObject', 's3:DeleteObject'], resources: [`${bucketPattern}/*`] }),
+        // Distribution IDs are generated at deploy time; the action itself is low-risk.
+        new iam.PolicyStatement({ actions: ['cloudfront:CreateInvalidation'], resources: [this.formatArn({ service: 'cloudfront', region: '', resource: 'distribution', resourceName: '*' })] }),
+      ],
+    });
+  }
+
+  /** Runs scripts/smoke.sh against the environment's CloudFront URL; a failure stops the run. */
+  private smokeStep(stage: TherapyServiceHoursStage, config: EnvConfig): pipelines.ShellStep {
+    return new pipelines.ShellStep(`Smoke-${config.envName}`, {
+      input: this.sources.infra,
+      envFromCfnOutputs: { URL: stage.webStack.urlOutput },
+      commands: ['bash scripts/smoke.sh "$URL"'],
     });
   }
 }
