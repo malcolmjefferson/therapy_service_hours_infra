@@ -43,6 +43,16 @@ Requires Node 22 or later.
 
 **Database roles (S0-08):** the `Custom::DatabaseRoles` resource creates `app_rw` and `migrator` once per deploy (ADR-0001, amended 2026-10-10). Its handler, `dbbootstrap-provider`, runs outside the VPC, reads only the RDS-managed master secret and invokes the `dbbootstrap` worker in the VPC directly; the password is never in the template, an environment variable or a log. (CloudFormation does not resolve Secrets Manager dynamic references in custom-resource properties.) Bump `DATABASE_ROLES_REVISION` in `lib/app/database-roles.ts` to re-run it after a change.
 
+## Manual deploys (until the pipeline takes over)
+
+Deploy only from a **dedicated, clean checkout of `origin/main`**, never from a working checkout with feature branches. `scripts/deploy.sh` enforces this (clean tree, HEAD == origin/main, `EXPECTED_AWS_ACCOUNT` and `BACKEND_DIST` set) and deploys exactly one stack:
+
+```bash
+git worktree add --detach ../therapy_service_hours_infra-deploy origin/main   # once
+cd ../therapy_service_hours_infra-deploy && git fetch origin && git checkout --detach origin/main && npm ci
+EXPECTED_AWS_ACCOUNT=<account> BACKEND_DIST=<backend build dir> scripts/deploy.sh dev/Data
+```
+
 ## Layout
 
 ```
