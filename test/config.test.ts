@@ -27,11 +27,13 @@ describe('environment config (CLAUDE.md §4.2)', () => {
       backupRetention: Duration.days(1),
       deletionProtection: false,
       removalPolicy: RemovalPolicy.DESTROY,
+      deleteAutomatedBackups: true,
     });
     expect(prodConfig.database).toEqual({
       backupRetention: Duration.days(7),
       deletionProtection: true,
       removalPolicy: RemovalPolicy.SNAPSHOT,
+      deleteAutomatedBackups: false,
     });
   });
 
