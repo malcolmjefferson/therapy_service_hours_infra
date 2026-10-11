@@ -77,7 +77,7 @@ aws cloudwatch set-alarm-state --alarm-name therapy-service-hours-dev-api-5xx --
 4. **Assets**, then **Dev:** data → migrate → app → web → frontend sync → **smoke** (`scripts/smoke.sh`, then the frontend's Playwright spec, S0-20). A smoke failure stops the run before the prod approval.
 5. **Prod (S0-16):** `ReleaseInfo` prints the three commits, then **manual approval** (`PromoteToProd`, emailed to the owner), then an **RDS snapshot** `therapy-service-hours-prod-pre-release-<timestamp>` (the newest three are kept), then data → migrate → app → web → frontend sync → smoke, using the **same assets** that passed dev. Rejecting leaves prod untouched.
 
-Failures, approval requests and successes email the owner through the `therapy-service-hours-pipeline` SNS topic.
+Failures, approval requests and successes email the owner through the `therapy-service-hours-pipeline` SNS topic, sent by two EventBridge rules on CodePipeline's state-change events (`therapy-service-hours-pipeline-run-finished`, `-approval-needed`).
 
 **Who can approve:** anyone allowed `codepipeline:PutApprovalResult` on this pipeline. Today that is only the owner's IAM user. Keep it that way: don't grant pipeline approval to other principals.
 

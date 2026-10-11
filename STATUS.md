@@ -5,7 +5,7 @@
 
 ## Summary (2026-10-10)
 
-- **Slice S0 (walking skeleton):** 15 done, 1 in review, 0 in progress, 0 not started (of 16 tickets touching this repo).
+- **Slice S0 (walking skeleton):** 14 done, 2 in review, 0 in progress, 0 not started (of 16 tickets touching this repo).
 - **AWS:** account bootstrapped for CDK in us-west-2 (CDKToolkit). The dev data stack has not deployed successfully yet (four attempts; each failure fixed); nothing else is deployed.
 - **Next:** deploy dev/Data, then the pipeline stack once and authorize its GitHub connection (owner), then S1 (auth and invites).
 
@@ -23,7 +23,7 @@
 | S0-12 | CDK web construct: S3 + OAC, CloudFront, /api/* behavior, SPA rewrite, headers policy | done | [infra #13](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/13) | Synth-tested; header and 404 checks run after the dev web-stack deploy |
 | S0-14 | Pipeline stack: CDK Pipelines, three CodeConnections sources, build stage | done | [infra #16](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/16) | Owner: deploy the pipeline stack once and authorize the GitHub connection |
 | S0-15 | Pipeline: deploy dev (data, migrate, app, frontend) and smoke test | done | [infra #17](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/17) | Live once the pipeline is deployed and its connection authorized |
-| S0-16 | Pipeline: manual approval, pre-prod snapshot, deploy prod, SNS notifications | done | [infra #18](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/18) | Approval limited to the owner's IAM user (documented) |
+| S0-16 | Pipeline: manual approval, pre-prod snapshot, deploy prod, SNS notifications | in review | [infra #18](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/18), fix: infra PR (this one) | First pipeline deploy failed: CodeStar Notifications rejected the topic; notifications now go through EventBridge rules |
 | S0-17 | CI security and quality gates | done | [infra #5](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/5) | Dependabot ignore rules for held-back majors: frontend #10, infra #9 (in review) |
 | S0-18 | Alerts and budget: SNS email, $50 AWS Budget, CloudWatch alarms | done | [infra #14](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/14) | Pipeline failure notifications come with S0-14; owner confirms the SNS email after deploy |
 | S0-19 | OpenAPI pinned-copy sync and drift gate in frontend and pipeline | done | [frontend #5](https://github.com/malcolmjefferson/therapy_service_hours_frontend/pull/5) | Frontend part and the pipeline drift step (S0-14) merged |
