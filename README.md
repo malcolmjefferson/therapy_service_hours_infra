@@ -115,6 +115,25 @@ test/             Vitest tests (CDK assertions, smoke script)
 docs/runbook.md   Operating procedures (S0-21)
 ```
 
+## Dev identity seeding (S1-09)
+
+The dev pipeline invokes the IAM-protected VPC seed Lambda after app deployment (and migrations).
+The owner selected the first admin in `config/dev.ts`. Auth stays disabled in this preparation,
+so the step initially creates only database rows/invitations. With auth enabled later, the
+same non-VPC step creates the three fixed native test users with suppressed messages, using
+the generated password in `therapy-service-hours-dev-auth-test-users`. That secret adds about
+$0.40/month on activation; no new npm/Python runtime dependency is needed.
+
+The CodeBuild runner assumes a named app-owned role scoped to this seed Lambda and, when
+enabled, this one Cognito pool and test credential secret. No pool/secret access is granted
+to the VPC Lambda. Both runtime and synth guards forbid dev fixtures or automatic seeding in prod.
+Repeat runs preserve existing passwords, identities and bindings; conflicting/deactivated state
+stops the release. See [seed operation](docs/runbook.md#15-identity-seeding-s1-09).
+
+Merge/release the build-discovery fix first, then backend `cmd/seed`, then this infra construct.
+Validation includes `npm run typecheck`, `npm test`, `python3 -m unittest discover -s test -p 'test_seed_dev.py'`
+and full credential-less synthesis. Google federation and p99 remain S1-18.
+
 ## Contributing
 
 S1 Cognito preparation is documented in [Google OAuth setup](docs/google-oauth-setup.md).

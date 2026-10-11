@@ -90,8 +90,9 @@ describe('Cognito identity and OAuth settings (S1-01)', () => {
       },
       AttributeMapping: { email: 'email', email_verified: 'email_verified', given_name: 'given_name', family_name: 'family_name' },
     });
-    // No fake credentials or extra secret created by this construct.
-    template.resourceCountIs('AWS::SecretsManager::Secret', 0); // RDS manages its master secret.
+    // Google credentials remain external; only native dev test credentials are generated.
+    template.resourceCountIs('AWS::SecretsManager::Secret', config.auth.createPasswordTestClient ? 1 : 0);
+    if (config.auth.createPasswordTestClient) template.hasResourceProperties('AWS::SecretsManager::Secret', { Name: 'therapy-service-hours-dev-auth-test-users', GenerateSecretString: Match.objectLike({ GenerateStringKey: 'password' }) });
   });
 
   test.each([devConfig, prodConfig])('$envName SPA is a Google-only public code client with approved token lifetimes', (config) => {

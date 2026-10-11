@@ -13,6 +13,7 @@ import {
 } from 'aws-cdk-lib/aws-cognito';
 import { CfnOutput, Duration, SecretValue } from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
+import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { EnvConfig } from '../../config';
 
 export interface AuthProps {
@@ -28,6 +29,10 @@ export class Auth extends Construct {
   readonly domain: UserPoolDomain;
   readonly hostedUiOrigin: string;
   readonly googleRedirectUri: string;
+  readonly userPoolIdOutput: CfnOutput;
+  readonly testClientIdOutput?: CfnOutput;
+  readonly testSecretArnOutput?: CfnOutput;
+  readonly testCredentials?: Secret;
 
   constructor(scope: Construct, id: string, props: AuthProps) {
     super(scope, id);
@@ -102,7 +107,13 @@ export class Auth extends Construct {
         readAttributes,
         writeAttributes,
       });
-      new CfnOutput(this, 'PasswordTestClientId', { value: this.passwordTestClient.userPoolClientId });
+      this.testClientIdOutput = new CfnOutput(this, 'PasswordTestClientId', { value: this.passwordTestClient.userPoolClientId });
+      this.testCredentials = new Secret(this, 'TestCredentials', {
+        secretName: `${props.prefix}auth-test-users`, removalPolicy: settings.removalPolicy,
+        description: 'Generated dev-only password for the three fixed synthetic accounts (ADR-0011)',
+        generateSecretString: { secretStringTemplate: '{}', generateStringKey: 'password', passwordLength: 32, requireEachIncludedType: true },
+      });
+      this.testSecretArnOutput = new CfnOutput(this, 'TestCredentialsArn', { value: this.testCredentials.secretArn });
     }
     this.domain = this.userPool.addDomain('Domain', {
       cognitoDomain: { domainPrefix: settings.domainPrefix },
@@ -110,7 +121,7 @@ export class Auth extends Construct {
     });
     this.hostedUiOrigin = this.domain.baseUrl();
     this.googleRedirectUri = `${this.hostedUiOrigin}/oauth2/idpresponse`;
-    new CfnOutput(this, 'UserPoolId', { value: this.userPool.userPoolId });
+    this.userPoolIdOutput = new CfnOutput(this, 'UserPoolId', { value: this.userPool.userPoolId });
     new CfnOutput(this, 'SpaClientId', { value: this.spaClient.userPoolClientId });
     new CfnOutput(this, 'HostedUiOrigin', { value: this.hostedUiOrigin });
     new CfnOutput(this, 'GoogleRedirectUri', { value: this.googleRedirectUri });

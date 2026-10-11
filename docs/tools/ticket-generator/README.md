@@ -24,3 +24,5 @@ python3 tools/ticket-generator/gen.py --write --slices S0,S1
 
 Status keys and values are validated against the ticket definitions. Full `--write`
 generation also includes the execution status in the tracked slice documents.
+For open PR references, set `merged: false`; their links are labelled Open PRs and the
+Implementation merged checkbox remains unchecked. Omitted `merged` means verified merged PRs.

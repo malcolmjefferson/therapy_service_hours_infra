@@ -40,6 +40,8 @@ for ticket,progress in execution['tickets'].items():
     if ticket not in by: errs.append(f'unknown status ticket {ticket}')
     if progress['status'] not in ('not started','in progress','in review','done'):
         errs.append(f'invalid status for {ticket}')
+    if 'merged' in progress and not isinstance(progress['merged'],bool):
+        errs.append(f'invalid merged flag for {ticket}')
 ids=[d['id'] for d in tk]
 if len(ids)!=len(set(ids)): errs.append('duplicate ids')
 for d in tk:
@@ -128,10 +130,11 @@ for s in order:
             for pr in progress.get('prs',[]):
                 repo,number=pr.split('/')
                 links.append(f'[{repo} #{number}](https://github.com/malcolmjefferson/therapy_service_hours_{repo}/pull/{number})')
-            o += ['**Completion / progress**\n',progress['notes']+'\n','Merged PRs: '+', '.join(links)+'.\n']
+            o += ['**Completion / progress**\n',progress['notes']+'\n']
+            if links: o.append(('Merged PRs: ' if progress.get('merged',True) else 'Open PRs: ')+', '.join(links)+'.\n')
         o += ["**Description**\n",d['desc']+"\n","**Acceptance criteria**\n"]
         o+= [f"- [ ] {a}" for a in d['ac']]
-        merged='x' if progress.get('prs') else ' '
+        merged='x' if progress.get('prs') and progress.get('merged',True) else ' '
         o+= ["","**Definition of Done**\n",f"- [{merged}] Implementation merged\n- [ ] Validation: automated tests (and manual steps where noted) pass\n- [ ] Documentation: reviewer verification steps in the PR; OpenAPI/CLAUDE.md updated if a contract changed\n"]
     open(f"{DOCS}/jira/{fn}",'w',encoding='utf-8').write("\n".join(o))
 if selected:

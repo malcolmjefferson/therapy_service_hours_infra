@@ -8,6 +8,7 @@ export const prodConfig: EnvConfig = {
   region: APP_REGION,
   availabilityZones: ['us-west-2a', 'us-west-2b'],
   owner: 'malcolmjefferson',
+  seed: { onDeploy: false, includeDevUsers: false, reservedConcurrency: 1 },
   logRetention: RetentionDays.ONE_MONTH,
   auth: {
     enabled: false, // Replace the URLs at M3 and wire the allowlist before activation.

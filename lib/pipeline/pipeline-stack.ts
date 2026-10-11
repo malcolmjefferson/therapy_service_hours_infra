@@ -33,7 +33,7 @@ export const RELEASE_BRANCH = 'main';
  */
 export const MIN_UNRESERVED_CONCURRENCY = 100;
 
-export const BACKEND_LAMBDAS = ['api', 'migrate', 'dbbootstrap', 'dbbootstrap-provider', 'presignup'] as const;
+export const BACKEND_LAMBDAS = ['api', 'migrate', 'dbbootstrap', 'dbbootstrap-provider', 'presignup', 'seed'] as const;
 
 /** Props for {@link PipelineStack}. */
 export interface PipelineStackProps extends StackProps {
@@ -136,7 +136,7 @@ export class PipelineStack extends Stack {
       },
       partialBuildSpec: codebuild.BuildSpec.fromObject({ phases: { install: { 'runtime-versions': { nodejs: '22' } } } }),
       env: { EXPECTED_AWS_ACCOUNT: Aws.ACCOUNT_ID, BACKEND_DIST: 'backend-dist' },
-      commands: ['npm ci', 'npm run typecheck', 'npm test', 'npx cdk synth --quiet'],
+      commands: ['npm ci', 'npm run typecheck', 'npm test', 'python3 -m unittest discover -s test -p "test_seed_dev.py"', 'npx cdk synth --quiet'],
       primaryOutputDirectory: 'cdk.out',
     });
 
@@ -168,6 +168,7 @@ export class PipelineStack extends Stack {
       stackSteps: [
         // ADR-0003: migrations run after the data stack and before the app stack.
         { stack: this.dev.dataStack, pre: [this.concurrencyPreflightStep(devConfig)], post: [this.migrateStep(this.dev, devConfig)] },
+        { stack: this.dev.appStack, post: devConfig.seed.onDeploy ? [this.seedStep(this.dev, devConfig)] : [] },
         { stack: this.dev.webStack, post: [this.frontendSyncStep(this.dev, devConfig)] },
       ],
       post: [this.smokeStep(this.dev, devConfig)],
@@ -278,7 +279,7 @@ export class PipelineStack extends Stack {
   private concurrencyPreflightStep(config: EnvConfig): pipelines.CodeBuildStep {
     const fn = `${resourcePrefix(config)}api`;
     return new pipelines.CodeBuildStep(`ConcurrencyPreflight-${config.envName}`, {
-      env: { FUNCTION_NAME: fn, WANT: String(config.api.reservedConcurrency), TRIGGER_NAME: `${resourcePrefix(config)}presignup`, TRIGGER_WANT: String(config.auth.preSignUp.reservedConcurrency), MIN_UNRESERVED: String(MIN_UNRESERVED_CONCURRENCY) },
+      env: { FUNCTION_NAME: fn, WANT: String(config.api.reservedConcurrency), TRIGGER_NAME: `${resourcePrefix(config)}presignup`, TRIGGER_WANT: String(config.auth.preSignUp.reservedConcurrency), SEED_NAME: `${resourcePrefix(config)}seed`, SEED_WANT: String(config.seed.reservedConcurrency), MIN_UNRESERVED: String(MIN_UNRESERVED_CONCURRENCY) },
       commands: [
         // POSIX sh only: CodeBuild runs these commands with /bin/sh.
         'LIMIT="$(aws lambda get-account-settings --query AccountLimit.ConcurrentExecutions --output text)"',
@@ -288,7 +289,9 @@ export class PipelineStack extends Stack {
         'case "$CURRENT" in ""|None) CURRENT=0;; esac',
         'TRIGGER_CURRENT="$(aws lambda get-function-concurrency --function-name "$TRIGGER_NAME" --query ReservedConcurrentExecutions --output text 2>/dev/null || true)"',
         'case "$TRIGGER_CURRENT" in ""|None) TRIGGER_CURRENT=0;; esac',
-        'AFTER=$((UNRESERVED + CURRENT + TRIGGER_CURRENT - WANT - TRIGGER_WANT))',
+        'SEED_CURRENT="$(aws lambda get-function-concurrency --function-name "$SEED_NAME" --query ReservedConcurrentExecutions --output text 2>/dev/null || true)"',
+        'case "$SEED_CURRENT" in ""|None) SEED_CURRENT=0;; esac',
+        'AFTER=$((UNRESERVED + CURRENT + TRIGGER_CURRENT + SEED_CURRENT - WANT - TRIGGER_WANT - SEED_WANT))',
         'echo "Lambda concurrency: limit $LIMIT, unreserved $UNRESERVED; $FUNCTION_NAME reserves $CURRENT now, $WANT after this release; unreserved after: $AFTER (minimum $MIN_UNRESERVED)"',
         'if [ "$AFTER" -lt "$MIN_UNRESERVED" ]; then echo "PREFLIGHT FAIL: raise the Lambda concurrent executions quota (Service Quotas, L-B99A9384) or lower api.reservedConcurrency; nothing has been deployed." >&2; exit 1; fi',
       ],
@@ -297,9 +300,33 @@ export class PipelineStack extends Stack {
         new iam.PolicyStatement({ actions: ['lambda:GetAccountSettings'], resources: ['*'] }),
         new iam.PolicyStatement({
           actions: ['lambda:GetFunctionConcurrency'],
-          resources: [fn, `${resourcePrefix(config)}presignup`].map((name) => this.formatArn({ service: 'lambda', resource: 'function', resourceName: name, arnFormat: ArnFormat.COLON_RESOURCE_NAME })),
+          resources: [fn, `${resourcePrefix(config)}presignup`, `${resourcePrefix(config)}seed`].map((name) => this.formatArn({ service: 'lambda', resource: 'function', resourceName: name, arnFormat: ArnFormat.COLON_RESOURCE_NAME })),
         }),
       ],
+    });
+  }
+
+  /** Dev bootstrap after migrations and app deployment. No production automatic path exists. */
+  private seedStep(stage: TherapyServiceHoursStage, config: EnvConfig): pipelines.CodeBuildStep {
+    if (config.envName !== 'dev' || !config.seed.adminEmail || !stage.appStack.seed.operatorArnOutput) {
+      throw new Error('Automatic seeding requires the dev environment, owner admin email and scoped operator role');
+    }
+    const prefix = resourcePrefix(config);
+    const operatorArn = this.formatArn({ service: 'iam', region: '', resource: 'role', resourceName: `${prefix}seed-operator` });
+    const runner = new iam.Role(this, 'DevSeedRunner', { roleName: `${prefix}seed-runner`, assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com') });
+    runner.addToPolicy(new iam.PolicyStatement({ actions: ['sts:AssumeRole'], resources: [operatorArn] }));
+    const auth = stage.dataStack.auth;
+    const outputs: Record<string, CfnOutput> = { SEED_FUNCTION_NAME: stage.appStack.seed.nameOutput, SEED_OPERATOR_ROLE_ARN: stage.appStack.seed.operatorArnOutput };
+    if (auth) {
+      if (!auth.testClientIdOutput || !auth.testSecretArnOutput) throw new Error('Dev auth seed requires its password test client and generated credentials');
+      outputs.USER_POOL_ID = auth.userPoolIdOutput;
+      outputs.TEST_CLIENT_ID = auth.testClientIdOutput;
+      outputs.TEST_CREDENTIALS_ARN = auth.testSecretArnOutput;
+    }
+    return new pipelines.CodeBuildStep('Seed-dev', {
+      input: this.sources.infra, role: runner, envFromCfnOutputs: outputs,
+      env: { APP_ENV: 'dev', ADMIN_EMAIL: config.seed.adminEmail, INCLUDE_DEV_USERS: String(config.seed.includeDevUsers), AUTH_ENABLED: String(config.auth.enabled) },
+      commands: ['python3 scripts/seed_dev.py'], timeout: Duration.minutes(5),
     });
   }
 

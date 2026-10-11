@@ -330,3 +330,52 @@ tool; neither is implemented in this preparation, so it is **not yet an executab
 5. Keep the old pool and recovery point until verification is complete. If binding fails, keep
    sign-in unavailable, restore the saved configuration/bindings and investigate. Record the
    rehearsal outcome in S1-18/S11 before treating this as proven recovery.
+
+## 15. Identity seeding (S1-09)
+
+Release the backend build-discovery fix before the backend seed binary, then release the backend
+before adding the infra seed construct. Keep auth disabled for this preparation. `Seed-dev` runs
+after the app stack, so migrations, function code and the scoped operator role are already ready.
+It creates the owner-selected admin users row and invitation plus the two invited synthetic dev
+accounts. `test-uninvited@example.invalid` has neither a DB row nor invitation.
+
+The Lambda validates `admin_email`, `include_dev_users`, `allow_prod` against its own `APP_ENV`.
+The database operation is one advisory-locked transaction. Repeat runs preserve IDs and expiry;
+an expired pending invitation is revoked before one new 14-day invitation is inserted. Accepted
+history, Cognito bindings, roles and deactivation are never overwritten. Conflicting state returns
+`SEED_CONFLICT` and rolls back earlier writes. Do not bypass that refusal with a manual role reset.
+
+The dev non-VPC CodeBuild runner assumes `therapy-service-hours-dev-seed-operator`, whose trust
+allows only the named seed runner role. Permission is restricted to invoking the seed function
+and, after auth activation, this pool's native-user operations and this test credential secret.
+The script verifies the pool/client names before mutation, suppresses all user notifications,
+and creates only `test-invited`, `test-uninvited`, `test-supervisor` at `example.invalid`.
+Their generated dev password is shared in one managed secret and never printed or placed in
+command arguments. Confirmed identities/passwords and expected groups remain unchanged on rerun;
+partial creation completes safely, while disabled users or unexpected groups cause refusal.
+
+After release, run the seed again through the authorized pipeline/operator path and verify zero
+new accounts/invitations. Invoke `presignup:live` with synthetic Google events: test-invited and
+test-supervisor should pass; test-uninvited should return `SIGN_UP_NOT_ALLOWED`. Invoking the
+seed in prod without `allow_prod: true`, or with dev fixtures even with that flag, must refuse
+before storage. Production automatic seeding and native test credentials are forbidden in synth.
+
+For a manual production seed, use an owner-authorized IAM invocation with a JSON payload file:
+
+```json
+{"admin_email":"admin@example.test","include_dev_users":false,"allow_prod":true}
+```
+
+Replace the fictional email locally. Do not print the payload in shared logs. The function returns
+counts and stable codes only; this operation creates a DB invitation/row, never a native Cognito
+identity for the real admin. First Google sign-in and S1-06 perform the subject binding. Additional
+admin addresses can be seeded the same way; formal recovery acceptance remains S1-20.
+
+Test-password rotation is coordinated: changing the managed secret alone leaves existing native
+passwords unchanged. Update the three fixed synthetic users through the same scoped IAM operator
+using a reviewed operation with captured SDK/CLI input/output. Do not reset arbitrary real users.
+
+Measured preparation evidence (2026-10-11): the deployed trigger's two `INIT_REPORT` durations
+were 2805.16 and 3057.93 ms; the first synthetic uninvited decision took 66 ms. These are small
+samples of provisioned initialization and a warm database-backed request, not cold/warm p99
+or real federation proof. S1-18 must collect a representative sample and actual Google sign-ins.
