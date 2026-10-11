@@ -37,4 +37,4 @@ Statuses: **not started**, **in progress**, **in review** (PR open), **done** (m
 | ID | Title | Status | PRs | Notes |
 |---|---|---|---|---|
 | S1-02 | Auth design decisions | in progress | — | Owner accepted ADR-0008–0011 as proposed on 2026-10-11; decision docs prepared for review. Live federation and latency proof remain S1-18. |
-| S1-01 | Cognito pool, Google IdP and clients | in progress | infra PR (this one) | Data-stack pool, groups, secret references, classic hosted UI/Lite, tokens and dev-only test client prepared and synth-tested. Auth remains disabled; owner Google setup, S1-03 attachment and deployment proof remain. See docs/google-oauth-setup.md. |
+| S1-01 | Cognito pool, Google IdP and clients | in progress | [infra #32](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/32) | Data-stack pool, groups, secret references, classic hosted UI/Lite, tokens and dev-only test client prepared and synth-tested. Auth remains disabled; owner Google setup, S1-03 attachment and deployment proof remain. See docs/google-oauth-setup.md. |
