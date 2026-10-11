@@ -98,8 +98,9 @@ export class PipelineStack extends Stack {
       additionalInputs: { '../backend': this.sources.backend },
       partialBuildSpec: codebuild.BuildSpec.fromObject({ phases: { install: { 'runtime-versions': { nodejs: '22' } } } }),
       commands: [
+        // No npm audit here: a newly published advisory would block unrelated releases. PRs and
+        // a weekly scheduled job audit dependencies in GitHub Actions instead (SEC-71).
         'npm ci',
-        'npm audit --audit-level=high',
         'npm run lint',
         'npm run typecheck',
         'npm run format:check',
@@ -120,7 +121,7 @@ export class PipelineStack extends Stack {
       },
       partialBuildSpec: codebuild.BuildSpec.fromObject({ phases: { install: { 'runtime-versions': { nodejs: '22' } } } }),
       env: { EXPECTED_AWS_ACCOUNT: Aws.ACCOUNT_ID, BACKEND_DIST: 'backend-dist' },
-      commands: ['npm ci', 'npm audit --audit-level=high', 'npm run typecheck', 'npm test', 'npx cdk synth --quiet'],
+      commands: ['npm ci', 'npm run typecheck', 'npm test', 'npx cdk synth --quiet'],
       primaryOutputDirectory: 'cdk.out',
     });
 
