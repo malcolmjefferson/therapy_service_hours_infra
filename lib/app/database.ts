@@ -5,7 +5,12 @@ import * as rds from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
 import { EnvConfig } from '../../config';
 
-/** PostgreSQL engine for every environment. Minor upgrades apply automatically. */
+/**
+ * PostgreSQL engine for every environment, pinned to the minor version. Automatic minor upgrades
+ * are off: with them on, RDS upgrades the instance past this pin and the next deploy would ask
+ * for the older version, which RDS refuses, blocking every release. Upgrade by bumping this
+ * constant in a PR (runbook: "Minor version upgrades").
+ */
 export const POSTGRES_ENGINE_VERSION = rds.PostgresEngineVersion.VER_17_9;
 
 /** Name of the application database inside the instance. */
@@ -74,7 +79,7 @@ export class Database extends Construct {
       deletionProtection: config.database.deletionProtection,
       removalPolicy: config.database.removalPolicy,
       copyTagsToSnapshot: true,
-      autoMinorVersionUpgrade: true,
+      autoMinorVersionUpgrade: false,
       preferredBackupWindow: '10:00-10:30',
       preferredMaintenanceWindow: 'sun:11:00-sun:11:30',
       cloudwatchLogsExports: ['postgresql'],
