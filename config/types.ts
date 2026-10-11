@@ -28,9 +28,26 @@ export interface EnvConfig {
   /** CloudWatch log retention for every log group (ARC-43). */
   readonly logRetention: RetentionDays;
   readonly database: DatabaseSettings;
+  readonly auth: AuthSettings;
   readonly api: ApiSettings;
   readonly web: WebSettings;
   readonly alerts: AlertSettings;
+}
+
+/** Cognito settings (ADR-0009). Only secret references, never credential values. */
+export interface AuthSettings {
+  /** Activation waits for the Google secret and S1-03 allowlist trigger. */
+  readonly enabled: boolean;
+  readonly googleSecretName: string;
+  readonly googleClientIdKey: string;
+  readonly googleClientSecretKey: string;
+  readonly domainPrefix: string;
+  readonly callbackUrls: readonly string[];
+  readonly logoutUrls: readonly string[];
+  readonly removalPolicy: RemovalPolicy;
+  readonly deletionProtection: boolean;
+  /** Synthetic automated users only (ADR-0011); false in prod. */
+  readonly createPasswordTestClient: boolean;
 }
 
 /** Alerting (S0-18, ARC-44, SEC-54). */

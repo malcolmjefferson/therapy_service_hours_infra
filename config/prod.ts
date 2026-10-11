@@ -9,6 +9,19 @@ export const prodConfig: EnvConfig = {
   availabilityZones: ['us-west-2a', 'us-west-2b'],
   owner: 'malcolmjefferson',
   logRetention: RetentionDays.ONE_MONTH,
+  auth: {
+    enabled: false, // Replace the URLs at M3 and wire the allowlist before activation.
+    googleSecretName: 'therapy-service-hours/prod/google-oauth',
+    googleClientIdKey: 'client_id',
+    googleClientSecretKey: 'client_secret',
+    domainPrefix: 'therapy-service-hours-prod-malcolmjefferson',
+    // Synth-valid only: prod has no CloudFront distribution until M3.
+    callbackUrls: ['https://prod-not-enabled.example.invalid/auth/callback'],
+    logoutUrls: ['https://prod-not-enabled.example.invalid/'],
+    removalPolicy: RemovalPolicy.RETAIN,
+    deletionProtection: true,
+    createPasswordTestClient: false,
+  },
   api: {
     reservedConcurrency: 20,
     throttle: { rateLimit: 50, burstLimit: 100 },

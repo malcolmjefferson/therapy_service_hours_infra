@@ -4,6 +4,7 @@ import { EnvConfig, resourcePrefix } from '../../config';
 import { ComparisonOperator } from 'aws-cdk-lib/aws-cloudwatch';
 import { LambdaArtifacts } from '../artifacts';
 import { ALARM_PERIOD, ALARM_THRESHOLDS, Alerts } from './alerts';
+import { Auth } from './auth';
 import { Database } from './database';
 import { DatabaseRoles } from './database-roles';
 import { Migrate } from './migrate';
@@ -16,7 +17,7 @@ export interface DataStackProps extends StackProps {
 }
 
 /**
- * Long-lived, stateful resources: network, RDS and database roles (ARC-27).
+ * Long-lived resources: network, RDS, database roles and Cognito identity (ADR-0009).
  * Deployed before migrations run, so it never depends on the app stack.
  */
 export class DataStack extends Stack {
@@ -25,6 +26,7 @@ export class DataStack extends Stack {
   readonly roles: DatabaseRoles;
   readonly alerts: Alerts;
   readonly migrate: Migrate;
+  readonly auth?: Auth;
   /** Name of the migrate Lambda, for the pipeline's migrate step (S0-15). */
   readonly migrateFunctionOutput: CfnOutput;
   private readonly zones: readonly string[];
@@ -33,6 +35,9 @@ export class DataStack extends Stack {
     super(scope, id, props);
     this.zones = props.config.availabilityZones;
     const prefix = resourcePrefix(props.config);
+    if (props.config.auth.enabled) {
+      this.auth = new Auth(this, 'Auth', { config: props.config, prefix });
+    }
     this.alerts = new Alerts(this, 'Alerts', { config: props.config, prefix });
 
     this.network = new Network(this, 'Network', { prefix, availabilityZones: props.config.availabilityZones });

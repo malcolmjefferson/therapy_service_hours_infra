@@ -9,6 +9,18 @@ export const devConfig: EnvConfig = {
   availabilityZones: ['us-west-2a', 'us-west-2b'],
   owner: 'malcolmjefferson',
   logRetention: RetentionDays.TWO_WEEKS,
+  auth: {
+    enabled: false, // Google secret and S1-03 trigger must exist before activation.
+    googleSecretName: 'therapy-service-hours/dev/google-oauth',
+    googleClientIdKey: 'client_id',
+    googleClientSecretKey: 'client_secret',
+    domainPrefix: 'therapy-service-hours-dev-malcolmjefferson',
+    callbackUrls: ['https://dx5eaoy4duyuy.cloudfront.net/auth/callback'],
+    logoutUrls: ['https://dx5eaoy4duyuy.cloudfront.net/'],
+    removalPolicy: RemovalPolicy.DESTROY,
+    deletionProtection: false,
+    createPasswordTestClient: true,
+  },
   api: {
     reservedConcurrency: 20,
     throttle: { rateLimit: 50, burstLimit: 100 },
