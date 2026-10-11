@@ -29,7 +29,7 @@ describe('database role bootstrap (S0-08, ADR-0001 amendment)', () => {
       MasterSecretArn: { 'Fn::GetAtt': [Match.anyValue(), 'MasterUserSecret.SecretArn'] },
       WorkerFunction: { Ref: Match.stringLikeRegexp('DatabaseRolesHandler') },
       Database: 'therapy_service_hours',
-      Revision: '2',
+      Revision: '3',
     });
     const json = JSON.stringify(t.toJSON());
     expect(json).not.toMatch(/\{\{resolve:secretsmanager/);
