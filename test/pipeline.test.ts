@@ -5,12 +5,16 @@ import { PLACEHOLDER_ACCOUNT } from '../lib/account';
 import { placeholderArtifacts } from '../lib/artifacts';
 import { PipelineStack, REPOSITORIES } from '../lib/pipeline/pipeline-stack';
 
-function pipelineTemplate(): Template {
+// Most tests cover the full pipeline with prod on (the M3 configuration); the deployProd: false
+// tests cover the current one (RELEASE.deployProd).
+function pipelineTemplate({ deployProd = true }: { deployProd?: boolean } = {}): Template {
   const stack = new PipelineStack(new App(), 'Pipeline', {
     env: { account: PLACEHOLDER_ACCOUNT, region: 'us-west-2' },
     account: PLACEHOLDER_ACCOUNT,
     artifacts: placeholderArtifacts(),
     notificationEmail: 'malcolmj0415@gmail.com',
+    deployProd,
+    monthlyBudgetUsd: 50,
   });
   return Template.fromStack(stack);
 }
@@ -209,6 +213,37 @@ describe('release pipeline (S0-14, ADR-0005)', () => {
     expect(policies).toContain('lambda:GetAccountSettings');
     expect(policies).toContain('function:therapy-service-hours-prod-api');
     expect(policies).not.toContain('lambda:PutFunctionConcurrency');
+  });
+
+  test('with prod deploys off (until M3), runs end after the dev smoke test: no approval, no prod stage', () => {
+    const t = pipelineTemplate({ deployProd: false });
+    const names = stages(t).map((s) => s.Name);
+    expect(names).toContain('Dev');
+    expect(names).not.toContain('Prod');
+    const actions = stages(t).flatMap((s) => s.Actions);
+    expect(actions.filter((a) => a.ActionTypeId.Category === 'Approval')).toHaveLength(0);
+    expect(JSON.stringify(t.toJSON())).not.toContain('therapy-service-hours-prod-');
+    // Dev is identical either way.
+    const dev = (deployProd: boolean) => JSON.stringify(stages(pipelineTemplate({ deployProd })).find((s) => s.Name === 'Dev'));
+    expect(dev(false)).toEqual(dev(true));
+  });
+
+  test('the account-wide $50 budget lives in the pipeline stack and alerts through its topic (SEC-82)', () => {
+    for (const deployProd of [false, true]) {
+      const t = pipelineTemplate({ deployProd });
+      t.resourceCountIs('AWS::Budgets::Budget', 1);
+      t.hasResourceProperties('AWS::Budgets::Budget', {
+        Budget: { BudgetName: 'therapy-service-hours-monthly', BudgetType: 'COST', TimeUnit: 'MONTHLY', BudgetLimit: { Amount: 50, Unit: 'USD' } },
+        NotificationsWithSubscribers: [
+          Match.objectLike({ Notification: Match.objectLike({ NotificationType: 'ACTUAL', Threshold: 80 }), Subscribers: [Match.objectLike({ Address: { Ref: Match.stringLikeRegexp('Notifications') } })] }),
+          Match.objectLike({ Notification: Match.objectLike({ NotificationType: 'ACTUAL', Threshold: 100 }) }),
+          Match.objectLike({ Notification: Match.objectLike({ NotificationType: 'FORECASTED', Threshold: 100 }) }),
+        ],
+      });
+      t.hasResourceProperties('AWS::SNS::TopicPolicy', {
+        PolicyDocument: { Statement: Match.arrayWith([Match.objectLike({ Sid: 'AllowBudgets', Principal: { Service: 'budgets.amazonaws.com' }, Action: 'sns:Publish' })]) },
+      });
+    }
   });
 
   test('no customer-managed KMS key (crossAccountKeys off, budget guard)', () => {

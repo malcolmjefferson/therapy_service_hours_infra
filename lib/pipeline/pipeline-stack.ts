@@ -11,6 +11,7 @@ import * as pipelines from 'aws-cdk-lib/pipelines';
 import { Construct } from 'constructs';
 import { APP_NAME, devConfig, EnvConfig, prodConfig, resourcePrefix } from '../../config';
 import { TherapyServiceHoursStage } from '../app-stage';
+import { addMonthlyBudget } from '../app/alerts';
 import { LambdaArtifacts } from '../artifacts';
 import { BudgetGuard } from '../guards/budget-guard';
 
@@ -42,6 +43,10 @@ export interface PipelineStackProps extends StackProps {
   readonly artifacts: LambdaArtifacts;
   /** Owner email for pipeline failure and approval notifications. */
   readonly notificationEmail: string;
+  /** Whether runs continue to prod after dev (config/release.ts; off until M3). */
+  readonly deployProd: boolean;
+  /** The account-wide monthly AWS Budget in USD (config/release.ts). */
+  readonly monthlyBudgetUsd: number;
 }
 
 /**
@@ -63,7 +68,8 @@ export class PipelineStack extends Stack {
   readonly frontendBuild: pipelines.CodeBuildStep;
   readonly sources: Record<keyof typeof REPOSITORIES, pipelines.CodePipelineSource>;
   readonly dev: TherapyServiceHoursStage;
-  readonly prod: TherapyServiceHoursStage;
+  /** Undefined while prod deploys are off (RELEASE.deployProd). */
+  readonly prod?: TherapyServiceHoursStage;
   readonly topic: sns.Topic;
 
   constructor(scope: Construct, id: string, props: PipelineStackProps) {
@@ -165,8 +171,35 @@ export class PipelineStack extends Stack {
       post: [this.smokeStep(this.dev, devConfig)],
     });
 
+    if (props.deployProd) {
+      this.prod = this.addProd(props);
+    }
+
+    this.pipeline.buildPipeline();
+
+    this.topic = new sns.Topic(this, 'Notifications', {
+      topicName: `${APP_NAME}-pipeline`,
+      displayName: 'Therapy Service Hours pipeline',
+      enforceSSL: true,
+    });
+    this.topic.addSubscription(new subscriptions.EmailSubscription(props.notificationEmail));
+    this.notifyOn(this.pipeline.pipeline.pipelineName);
+    // The account-wide budget lives here, the one stack always deployed (prod waits for M3).
+    addMonthlyBudget(this, 'MonthlyBudget', this.topic, props.monthlyBudgetUsd);
+
+    new CfnOutput(this, 'ConnectionArn', {
+      description: 'Authorize this GitHub connection once in the console (Developer Tools > Connections)',
+      value: connection.attrConnectionArn,
+    });
+  }
+
+  /**
+   * S0-16: release info, the owner's approval, then prod with the same synthesized assembly (same
+   * Lambda zips and templates tested in dev). Added only while RELEASE.deployProd is on.
+   */
+  private addProd(props: PipelineStackProps): TherapyServiceHoursStage {
     // S0-16: prod gets the same synthesized assembly, so the same Lambda zips and templates tested in dev.
-    this.prod = new TherapyServiceHoursStage(this, 'Prod', {
+    const prod = new TherapyServiceHoursStage(this, 'Prod', {
       config: prodConfig,
       artifacts: props.artifacts,
       env: { account: props.account, region: prodConfig.region },
@@ -189,30 +222,16 @@ export class PipelineStack extends Stack {
     const prodPreflight = this.concurrencyPreflightStep(prodConfig);
     const prodSnapshot = this.snapshotStep(prodConfig);
     prodSnapshot.addStepDependency(prodPreflight);
-    this.pipeline.addStage(this.prod, {
+    this.pipeline.addStage(prod, {
       pre: [releaseInfo, approval],
       stackSteps: [
         // ADR-0003: snapshot, then data stack, then migrations, then the app.
-        { stack: this.prod.dataStack, pre: [prodPreflight, prodSnapshot], post: [this.migrateStep(this.prod, prodConfig)] },
-        { stack: this.prod.webStack, post: [this.frontendSyncStep(this.prod, prodConfig)] },
+        { stack: prod.dataStack, pre: [prodPreflight, prodSnapshot], post: [this.migrateStep(prod, prodConfig)] },
+        { stack: prod.webStack, post: [this.frontendSyncStep(prod, prodConfig)] },
       ],
-      post: [this.smokeStep(this.prod, prodConfig)],
+      post: [this.smokeStep(prod, prodConfig)],
     });
-
-    this.pipeline.buildPipeline();
-
-    this.topic = new sns.Topic(this, 'Notifications', {
-      topicName: `${APP_NAME}-pipeline`,
-      displayName: 'Therapy Service Hours pipeline',
-      enforceSSL: true,
-    });
-    this.topic.addSubscription(new subscriptions.EmailSubscription(props.notificationEmail));
-    this.notifyOn(this.pipeline.pipeline.pipelineName);
-
-    new CfnOutput(this, 'ConnectionArn', {
-      description: 'Authorize this GitHub connection once in the console (Developer Tools > Connections)',
-      value: connection.attrConnectionArn,
-    });
+    return prod;
   }
 
   /**

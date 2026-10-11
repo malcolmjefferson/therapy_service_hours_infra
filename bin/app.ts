@@ -5,7 +5,7 @@ import { TherapyServiceHoursStage } from '../lib/app-stage';
 import { resolveArtifacts } from '../lib/artifacts';
 import { PipelineStack } from '../lib/pipeline/pipeline-stack';
 import { synthesisErrors } from '../lib/synth-errors';
-import { APP_NAME, APP_REGION, prodConfig } from '../config';
+import { APP_NAME, APP_REGION, prodConfig, RELEASE } from '../config';
 
 const app = new App();
 
@@ -38,6 +38,8 @@ new PipelineStack(app, 'Pipeline', {
   account,
   artifacts,
   notificationEmail: prodConfig.alerts.email,
+  deployProd: RELEASE.deployProd,
+  monthlyBudgetUsd: RELEASE.monthlyBudgetUsd,
 });
 
 const errors = synthesisErrors(app.synth());

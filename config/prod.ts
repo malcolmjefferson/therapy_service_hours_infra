@@ -17,7 +17,6 @@ export const prodConfig: EnvConfig = {
   },
   alerts: {
     email: 'malcolmj0415@gmail.com',
-    monthlyBudgetUsd: 50,
   },
   web: {
     bucketRemovalPolicy: RemovalPolicy.RETAIN,

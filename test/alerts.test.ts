@@ -58,22 +58,7 @@ describe('alerts (S0-18)', () => {
     }
   });
 
-  test('prod defines the account-wide $50 budget with 80% and 100% alerts to the topic (SEC-82)', () => {
-    const { data } = templates(prodConfig);
-    data.hasResourceProperties('AWS::Budgets::Budget', {
-      Budget: { BudgetName: 'therapy-service-hours-monthly', BudgetType: 'COST', TimeUnit: 'MONTHLY', BudgetLimit: { Amount: 50, Unit: 'USD' } },
-      NotificationsWithSubscribers: [
-        Match.objectLike({ Notification: Match.objectLike({ NotificationType: 'ACTUAL', Threshold: 80 }) }),
-        Match.objectLike({ Notification: Match.objectLike({ NotificationType: 'ACTUAL', Threshold: 100 }) }),
-        Match.objectLike({ Notification: Match.objectLike({ NotificationType: 'FORECASTED', Threshold: 100 }) }),
-      ],
-    });
-    data.hasResourceProperties('AWS::SNS::TopicPolicy', {
-      PolicyDocument: { Statement: Match.arrayWith([Match.objectLike({ Sid: 'AllowBudgets', Principal: { Service: 'budgets.amazonaws.com' }, Action: 'sns:Publish' })]) },
-    });
-  });
-
-  test('dev defines no budget (budgets are account-wide; prod owns it)', () => {
-    templates(devConfig).data.resourceCountIs('AWS::Budgets::Budget', 0);
+  test.each([devConfig, prodConfig])('$envName: no budget in the environment (account-wide, in the pipeline stack)', (config) => {
+    templates(config).data.resourceCountIs('AWS::Budgets::Budget', 0);
   });
 });

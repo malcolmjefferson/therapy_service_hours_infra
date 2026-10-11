@@ -37,11 +37,6 @@ export interface EnvConfig {
 export interface AlertSettings {
   /** Owner email for the SNS alert topic (CLAUDE.md §4.3). The subscription needs a one-time confirmation click. */
   readonly email: string;
-  /**
-   * Account-wide AWS Budget in USD per month, with 80% and 100% alerts (SEC-82). Budgets are
-   * account-level, so only one environment (prod) defines it.
-   */
-  readonly monthlyBudgetUsd?: number;
 }
 
 /** SPA hosting (S0-12). */
