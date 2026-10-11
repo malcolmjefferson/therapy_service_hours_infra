@@ -100,7 +100,9 @@ export class PipelineStack extends Stack {
         'go version',
         'go vet ./...',
         'go test ./...',
-        `for c in ${BACKEND_LAMBDAS.join(' ')}; do GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "dist/$c/bootstrap" "./cmd/$c"; done`,
+        // Build new backend commands before a later infra revision references their artifacts.
+        // A static list here prevents synth from reaching the self-mutation that extends it.
+        'set -e; for dir in cmd/*; do [ -d "$dir" ] || continue; c="${dir#cmd/}"; GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "dist/$c/bootstrap" "./$dir"; done',
         'echo "$COMMIT_ID" > dist/VERSION',
       ],
       primaryOutputDirectory: 'dist',
