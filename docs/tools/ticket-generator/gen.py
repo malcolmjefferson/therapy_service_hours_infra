@@ -12,6 +12,13 @@ for r in rows:
     d['labels']=d['labels'].split(','); d['slice']=d['id'].split('-')[0]
     tk.append(d)
 by={d['id']:d for d in tk}
+status_path=os.path.join(os.path.dirname(os.path.abspath(__file__)),'status.json')
+execution=json.load(open(status_path,encoding='utf-8')) if os.path.exists(status_path) else {'slices':{},'tickets':{}}
+selected=[]
+if '--slices' in sys.argv:
+    selected=sys.argv[sys.argv.index('--slices')+1].split(',')
+    if '--write' not in sys.argv or any(s not in {d['slice'] for d in tk} for s in selected):
+        sys.exit('--slices requires --write and valid comma-separated slice IDs')
 SL={
 'S0':('Walking skeleton','Prove the whole delivery path with the smallest possible feature: a page served by CloudFront calls the API, which reads the database, deployed to dev and prod by one pipeline.','M1','Open the dev and prod URLs: the Status page shows the API version and database check. Break a lint rule, a test or a migration on purpose: the pipeline stops before prod and an email arrives.'),
 'S1':('Secure sign-in','Invite-only Google sign-in with roles, the first admin, and the authorization framework every later slice uses.','M2','An invited Google account signs in and sees its name and role-based navigation; an uninvited account is refused; a deactivated account is refused.'),
@@ -29,6 +36,10 @@ SL={
 order=['S%d'%i for i in range(12)]
 # ---------- validation ----------
 errs=[]
+for ticket,progress in execution['tickets'].items():
+    if ticket not in by: errs.append(f'unknown status ticket {ticket}')
+    if progress['status'] not in ('not started','in progress','in review','done'):
+        errs.append(f'invalid status for {ticket}')
 ids=[d['id'] for d in tk]
 if len(ids)!=len(set(ids)): errs.append('duplicate ids')
 for d in tk:
@@ -45,8 +56,8 @@ def fin(i,stack=()):
     d=by[i]; s=max([fin(x,stack+(i,)) for x in d['deps']] or [0]); ef[i]=s+d['est']; return ef[i]
 for i in ids: fin(i)
 # requirement/story id universes from docs
-r1=open(DOCS+'/01-requirements-specification.md').read()
-r3=open(DOCS+'/03-user-stories.md').read()
+r1=open(DOCS+'/01-requirements-specification.md',encoding='utf-8').read()
+r3=open(DOCS+'/03-user-stories.md',encoding='utf-8').read()
 fr=sorted(set(re.findall(r'^\| ((?:FR|NFR)-[A-Z0-9]+-\d+) \|',r1,re.M)))
 us=sorted(set(re.findall(r'^\| (US-\d+) \|',r3,re.M)))
 cov_fr=collections.defaultdict(list); cov_us=collections.defaultdict(list)
@@ -71,39 +82,66 @@ for s in order:
 tot=sum(v['days'] for v in stats.values())
 cp=max(ef.values())
 print(stats,tot,'critical path days',cp)
-json.dump(dict(stats=stats,total=tot,cp=cp,n=len(tk),fr=len(fr),us=len(us)),open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'stats.json'),'w'))
+json.dump(dict(stats=stats,total=tot,cp=cp,n=len(tk),fr=len(fr),us=len(us)),open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'stats.json'),'w',encoding='utf-8'))
 if errs or unc_fr or unc_us:
-    if '--write' not in sys.argv: sys.exit(1)
+    sys.exit(1)
 if '--write' not in sys.argv: sys.exit(0)
 # ---------- write per-slice files ----------
 pts={0.5:1,1:2,1.5:3,2:5}
 slug=lambda s:re.sub(r'[^a-z0-9]+','-',s.lower()).strip('-')
 files={}
 for s in order:
+    if selected and s not in selected: continue
     name,goal,ms,demo=SL[s]; ts=[d for d in tk if d['slice']==s]
+    tracked=s in execution['slices']
     fn=f"{s}-{slug(name)}.md"; files[s]=fn
     o=[f"# {s}: {name}\n",f"> **Milestone:** {ms} · **Tickets:** {len(ts)} · **Estimate:** {stats[s]['days']:g} developer-days\n",
        f"## Slice goal\n{goal}\n",f"## Demo / acceptance of the slice\n{demo}\n",
        "## Slice Definition of Done\n- [ ] Every ticket below meets its own AC and the DoD in `jira/README.md`\n- [ ] OpenAPI changed first and the frontend drift gate is green\n- [ ] Automated tests for the slice pass in the pipeline on dev\n- [ ] The demo above is performed on dev by someone other than the author, or recorded\n- [ ] Docs updated (this folder, OpenAPI, CLAUDE.md if contracts changed)\n",
-       "## Ticket index\n","| ID | Type | Summary | Est (d) | Blocked by |","|---|---|---|--:|---|"]
-    for d in ts: o.append(f"| [{d['id']}](#{d['id'].lower()}) | {d['type']} | {d['summary']} | {d['est']:g} | {', '.join(d['deps']) or '-'} |")
+       ]
+    if tracked:
+        counts=collections.Counter(execution['tickets'].get(d['id'],{}).get('status','not started') for d in ts)
+        summary=' · '.join(f"**{counts[state]} {state}**" for state in ('done','in progress','in review','not started'))
+        o += [f"## Execution status ({execution['updated']})\n",summary+'\n',execution['slices'][s]+'\n',
+              '**Status legend:** done = merged implementation; in progress = partial implementation or remaining acceptance; in review = open PR; not started = implementation has not begun. Completion notes distinguish dev verification from deferred prod/manual acceptance. Acceptance checkboxes are not automatically checked from merge status.\n']
+    suffix=' Status |' if tracked else ''
+    o += ['## Ticket index\n',f'| ID | Type | Summary | Est (d) | Blocked by |{suffix}',f"|---|---|---|--:|---|{'---|' if tracked else ''}"]
+    for d in ts:
+        progress=execution['tickets'].get(d['id'],{})
+        suffix=f" {progress.get('status','not started')} |" if tracked else ''
+        o.append(f"| [{d['id']}](#{d['id'].lower()}) | {d['type']} | {d['summary']} | {d['est']:g} | {', '.join(d['deps']) or '-'} |{suffix}")
     o.append("")
     for d in ts:
+        progress=execution['tickets'].get(d['id'],{})
         o+= [f"---\n\n### {d['id']}",f"**{d['summary']}**\n",
         "| Field | Value |","|---|---|",
         f"| Issue Type | {d['type']} |",f"| Epic | EPIC-{s} {name} |",f"| Priority | {d['pri']} |",
         f"| Estimate | {d['est']:g} day(s) · {pts[d['est']]} points |",f"| Labels | {', '.join(d['labels'])} |",
         f"| Requirements | {', '.join(d['reqs'])} |",f"| Stories | {', '.join(d['us'])} |",
-        f"| Is blocked by | {', '.join(d['deps']) or '-'} |",f"| Blocks | {', '.join(blocks.get(d['id'],[])) or '-'} |","",
-        "**Description**\n",d['desc']+"\n","**Acceptance criteria**\n"]
+        f"| Is blocked by | {', '.join(d['deps']) or '-'} |",f"| Blocks | {', '.join(blocks.get(d['id'],[])) or '-'} |",
+        ]
+        if tracked:
+            o.append(f"| Status ({execution['updated']}) | {progress.get('status','not started')} |")
+        o.append('')
+        if progress.get('notes'):
+            links=[]
+            for pr in progress.get('prs',[]):
+                repo,number=pr.split('/')
+                links.append(f'[{repo} #{number}](https://github.com/malcolmjefferson/therapy_service_hours_{repo}/pull/{number})')
+            o += ['**Completion / progress**\n',progress['notes']+'\n','Merged PRs: '+', '.join(links)+'.\n']
+        o += ["**Description**\n",d['desc']+"\n","**Acceptance criteria**\n"]
         o+= [f"- [ ] {a}" for a in d['ac']]
-        o+= ["","**Definition of Done**\n","- [ ] Implementation merged\n- [ ] Validation: automated tests (and manual steps where noted) pass\n- [ ] Documentation: reviewer verification steps in the PR; OpenAPI/CLAUDE.md updated if a contract changed\n"]
-    open(f"{DOCS}/jira/{fn}",'w').write("\n".join(o))
+        merged='x' if progress.get('prs') else ' '
+        o+= ["","**Definition of Done**\n",f"- [{merged}] Implementation merged\n- [ ] Validation: automated tests (and manual steps where noted) pass\n- [ ] Documentation: reviewer verification steps in the PR; OpenAPI/CLAUDE.md updated if a contract changed\n"]
+    open(f"{DOCS}/jira/{fn}",'w',encoding='utf-8').write("\n".join(o))
+if selected:
+    print('written slices',', '.join(selected))
+    sys.exit(0)
 # ---------- CSV ----------
 epic_id={s:i+1 for i,s in enumerate(order)}
 num={d['id']:len(order)+i+1 for i,d in enumerate(tk)}
 maxl=max(len(d['labels']) for d in tk); maxb=max(len(v) for v in blocks.values())
-with open(f"{DOCS}/jira/tickets.csv",'w',newline='') as f:
+with open(f"{DOCS}/jira/tickets.csv",'w',newline='',encoding='utf-8') as f:
     w=csv.writer(f)
     w.writerow(['Issue Id','Issue Type','Summary','Description','Priority','Parent Id']+['Labels']*(maxl+1)+['Original Estimate','Story Points','Draft ID']+['Outward issue link (Blocks)']*maxb)
     for s in order:
@@ -121,6 +159,6 @@ o=["# 08. Traceability Matrix\n","> **Generated** from the ticket drafts by `jir
 o+=[f"| {x} | {', '.join(cov_fr[x])} |" for x in fr]
 o+=["","## Story to tickets\n","| Story | Tickets |","|---|---|"]
 o+=[f"| {x} | {', '.join(cov_us[x])} |" for x in us]
-open(f"{DOCS}/08-traceability-matrix.md",'w').write("\n".join(o)+"\n")
-json.dump(files,open(os.devnull,'w'))
+open(f"{DOCS}/08-traceability-matrix.md",'w',encoding='utf-8').write("\n".join(o)+"\n")
+json.dump(files,open(os.devnull,'w',encoding='utf-8'))
 print('written')
