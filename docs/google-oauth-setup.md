@@ -7,7 +7,8 @@ and has an `AWSCURRENT` version. That version contains exactly `client_id` and `
 both nonempty strings; the ID has Google's expected `.apps.googleusercontent.com` suffix.
 Values were inspected only in memory and were never printed. The supplied `thrapy-...` spelling
 was not found; the existing `therapy-...` name already matches config. Google console settings
-and credential validity are not proved by these structural checks; console review awaits sign-in.
+and credential validity are not proved by these structural checks. Google sign-in succeeded,
+but console navigation repeatedly returned to sign-in, blocking independent redirect/scope review.
 Both environments have `auth.enabled: false`; merging this preparation creates no
 Cognito resources and makes no Google secret lookup. S1-01 stays in progress until activation and
 deployment verification finish. The owner creates the Google client; credential values never
