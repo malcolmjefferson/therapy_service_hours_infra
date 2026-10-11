@@ -236,7 +236,26 @@ Current CAs expire in 2061 (RSA2048) and 2121 (RSA4096, ECC384).
 
 Comes with S1 (Cognito and the first-admin seed). Until then there are no application users.
 
-## 13. Cognito setup and pool replacement (S1-01; rehearse)
+## 13. S1 identity foundation release
+
+Merge the accepted S1-02 documentation, then the backend S1-15 claims adapter. Coordinate backend
+S1-05 and frontend S1-19 in the same source release: their API specs must match byte for byte.
+Merge the S1-04 additive identity migration and S1-17 backend role bootstrap before the infra
+bootstrap revision changes to 3. The pipeline's data-before-migrate order creates `presignup_ro`
+first; migration 00002 grants it SELECT on exactly `users` and `invitations`. The bootstrap also
+handles identity tables that already exist. PostgreSQL-wide default SELECT grants are intentionally
+absent, so future client-data tables remain inaccessible to the trigger.
+
+Invitations default to **14 days**, with one pending invitation per case-insensitive email. An
+expired pending invitation must be revoked before a new one is created. Accepted and revoked
+history stays intact. Seed/re-invite operations will be supplied by S1-09; never work around the
+allowlist with manual account creation for real users. S1-06 owns the transactional acceptance stamp.
+
+S1-03 must attach `preSignUpDatabaseConnectPolicy` only to the trigger execution role, connect as
+`presignup_ro`, and retain isolated-subnet/no-internet constraints. The tested policy helper is
+defined in `lib/app/presignup-policy.ts`; this foundation release does not create the trigger.
+
+## 14. Cognito setup and pool replacement (S1-01; rehearse)
 
 Follow [Google OAuth setup](google-oauth-setup.md) for the two redirect URLs, secret references,
 feature plan/cost and activation prerequisites. Cognito is disabled in both environments

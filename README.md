@@ -42,7 +42,7 @@ Requires Node 22 or later.
 
 **Lambda code (`BACKEND_DIST`):** the Go Lambdas come from the backend build, laid out as `<dir>/<lambda>/bootstrap` (linux/arm64). With AWS credentials active, synth **refuses** unless `BACKEND_DIST` is set, so placeholder code can never be deployed. Without credentials (CI, tests) a placeholder asset is used. To run a credential-less synth on a machine that is logged in to AWS, hide the credentials: `AWS_SHARED_CREDENTIALS_FILE=/nonexistent AWS_CONFIG_FILE=/nonexistent npm run synth`.
 
-**Database roles (S0-08):** the `Custom::DatabaseRoles` resource creates `app_rw` and `migrator` once per deploy (ADR-0001, amended 2026-10-10). Its handler, `dbbootstrap-provider`, runs outside the VPC, reads only the RDS-managed master secret and invokes the `dbbootstrap` worker in the VPC directly; the password is never in the template, an environment variable or a log. (CloudFormation does not resolve Secrets Manager dynamic references in custom-resource properties.) Bump `DATABASE_ROLES_REVISION` in `lib/app/database-roles.ts` to re-run it after a change.
+**Database roles (S0-08/S1-17):** the `Custom::DatabaseRoles` resource creates `app_rw`, `migrator` and `presignup_ro` once per deploy (ADR-0001, amended 2026-10-10). Its handler, `dbbootstrap-provider`, runs outside the VPC, reads only the RDS-managed master secret and invokes the `dbbootstrap` worker in the VPC directly; the password is never in the template, an environment variable or a log. (CloudFormation does not resolve Secrets Manager dynamic references in custom-resource properties.) Bump `DATABASE_ROLES_REVISION` in `lib/app/database-roles.ts` to re-run it after a change.
 
 ## Alerts (S0-18)
 
