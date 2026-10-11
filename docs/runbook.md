@@ -75,6 +75,8 @@ EXPECTED_AWS_ACCOUNT=<account> BACKEND_DIST=<backend build dir with VERSION> scr
 
 ## 3. Approving a prod release
 
+> **Prod deploys are off until milestone M3** (owner decision 2026-10-11): `RELEASE.deployProd` in `config/release.ts` is `false`, so runs end after the dev smoke test and no approval is ever pending. To turn prod on, set it to `true` in a PR; the merge's run updates the pipeline and adds the steps below.
+
 1. The approval email arrives ("manual approval needed").
 2. In the run, open **ReleaseInfo** and note the three commits (infra, backend, frontend).
 3. Check the dev URL yourself: the start page loads and shows **Up** with the backend commit as the version.
@@ -203,7 +205,7 @@ go test ./internal/migrate/...           # applies every migration to a Testcont
 
 - **Target:** under **$50/month for both environments** (about $35–45 expected; two `db.t4g.micro` instances are most of it).
 - **Synth-time guard** (`lib/guards/budget-guard.ts`): `cdk synth` fails if any stack declares a NAT Gateway, RDS Proxy, interface VPC endpoint, load balancer, Multi-AZ or second database, an RDS/Aurora cluster, or a customer-managed KMS key. Adding one needs the **owner's approval and an ADR**.
-- **AWS Budget** `therapy-service-hours-monthly` (prod stack, account-wide): emails at 80% and 100% of actual spend and at 100% of forecast against $50.
+- **AWS Budget** `therapy-service-hours-monthly` (pipeline stack, account-wide, `config/release.ts`): emails at 80% and 100% of actual spend and at 100% of forecast against $50.
 - **Monthly check:** Cost Explorer grouped by service and by the `env` tag. Unexpected items: Secrets Manager secrets left from failed deploys, manual snapshots, retained automated backups (`aws rds describe-db-instance-automated-backups`), log groups without retention.
 - Optional saving: stop the dev database when idle (`aws rds stop-db-instance`); RDS restarts it after 7 days.
 

@@ -3,6 +3,7 @@ import { prodConfig } from './prod';
 import { EnvConfig, EnvName } from './types';
 
 export * from './types';
+export { RELEASE } from './release';
 export { devConfig, prodConfig };
 
 /** All environments, in promotion order (dev first). */

@@ -34,8 +34,8 @@ export interface AlertsProps {
 }
 
 /**
- * The environment's SNS alert topic (email to the owner) and, in the environment that defines it,
- * the account-wide AWS Budget (ARC-44, SEC-54, SEC-82).
+ * The environment's SNS alert topic (email to the owner) and its alarms (ARC-44, SEC-54). The
+ * account-wide budget is {@link addMonthlyBudget}, created once in the pipeline stack.
  */
 export class Alerts extends Construct {
   readonly topic: sns.Topic;
@@ -50,36 +50,6 @@ export class Alerts extends Construct {
       enforceSSL: true,
     });
     this.topic.addSubscription(new subscriptions.EmailSubscription(config.alerts.email));
-
-    if (config.alerts.monthlyBudgetUsd !== undefined) {
-      // AWS Budgets publishes to the topic, so budget alerts arrive with every other alert.
-      this.topic.addToResourcePolicy(
-        new iam.PolicyStatement({
-          sid: 'AllowBudgets',
-          principals: [new iam.ServicePrincipal('budgets.amazonaws.com')],
-          actions: ['sns:Publish'],
-          resources: [this.topic.topicArn],
-        }),
-      );
-      const subscribers = [{ subscriptionType: 'SNS', address: this.topic.topicArn }];
-      const notification = (threshold: number, notificationType: 'ACTUAL' | 'FORECASTED') => ({
-        notification: { comparisonOperator: 'GREATER_THAN', notificationType, threshold, thresholdType: 'PERCENTAGE' },
-        subscribers,
-      });
-      new budgets.CfnBudget(this, 'MonthlyBudget', {
-        budget: {
-          budgetName: 'therapy-service-hours-monthly',
-          budgetType: 'COST',
-          timeUnit: 'MONTHLY',
-          budgetLimit: { amount: config.alerts.monthlyBudgetUsd, unit: 'USD' },
-        },
-        notificationsWithSubscribers: [
-          notification(80, 'ACTUAL'),
-          notification(100, 'ACTUAL'),
-          notification(100, 'FORECASTED'),
-        ],
-      });
-    }
   }
 
   /** Creates an alarm that notifies the topic on ALARM and OK. */
@@ -93,3 +63,33 @@ export class Alerts extends Construct {
 
 /** Five-minute evaluation period used by every alarm. */
 export const ALARM_PERIOD = Duration.minutes(5);
+
+/**
+ * The account-wide AWS Budget (SEC-82): alerts at 80% and 100% of actual spend and 100% of forecast,
+ * published to topic. Budgets are account-level, so exactly one stack creates it.
+ */
+export function addMonthlyBudget(scope: Construct, id: string, topic: sns.Topic, amountUsd: number): budgets.CfnBudget {
+  // AWS Budgets publishes to the topic, so budget alerts arrive with every other notification.
+  topic.addToResourcePolicy(
+    new iam.PolicyStatement({
+      sid: 'AllowBudgets',
+      principals: [new iam.ServicePrincipal('budgets.amazonaws.com')],
+      actions: ['sns:Publish'],
+      resources: [topic.topicArn],
+    }),
+  );
+  const subscribers = [{ subscriptionType: 'SNS', address: topic.topicArn }];
+  const notification = (threshold: number, notificationType: 'ACTUAL' | 'FORECASTED') => ({
+    notification: { comparisonOperator: 'GREATER_THAN', notificationType, threshold, thresholdType: 'PERCENTAGE' },
+    subscribers,
+  });
+  return new budgets.CfnBudget(scope, id, {
+    budget: {
+      budgetName: 'therapy-service-hours-monthly',
+      budgetType: 'COST',
+      timeUnit: 'MONTHLY',
+      budgetLimit: { amount: amountUsd, unit: 'USD' },
+    },
+    notificationsWithSubscribers: [notification(80, 'ACTUAL'), notification(100, 'ACTUAL'), notification(100, 'FORECASTED')],
+  });
+}

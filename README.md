@@ -59,7 +59,7 @@ Each environment has an SNS topic `therapy-service-hours-<env>-alerts` emailing 
 
 Every alarm also notifies when it returns to OK. Thresholds live in `lib/app/alerts.ts` (`ALARM_THRESHOLDS`).
 
-**Budget:** prod defines the account-wide AWS Budget `therapy-service-hours-monthly` ($50/month) with alerts at 80% and 100% of actual spend and 100% of forecast, sent to the prod topic (SEC-82). AWS gives two budgets free; this account already has two, so this one costs about $0.02 a day.
+**Budget:** the pipeline stack defines the account-wide AWS Budget `therapy-service-hours-monthly` ($50/month, `config/release.ts`) with alerts at 80% and 100% of actual spend and 100% of forecast, sent to the `therapy-service-hours-pipeline` topic (SEC-82). It lives there because the pipeline stack is always deployed, and a budget is one per account. AWS gives two budgets free; this account already has two, so this one costs about $0.02 a day.
 
 **Test an alarm** (sends a real email, then returns to OK on the next evaluation):
 
@@ -75,7 +75,7 @@ aws cloudwatch set-alarm-state --alarm-name therapy-service-hours-dev-api-5xx --
 2. **Build** (parallel, fail fast): backend (`go vet`, `go test`, arm64 Lambda binaries), frontend (lint, type check, format, tests, **API drift gate**, build), then infra synth (type check, tests, `cdk synth` with the budget guard) using the backend binaries.
 3. **UpdatePipeline:** self-mutation from the infra repo.
 4. **Assets**, then **Dev:** data → migrate → app → web → frontend sync → **smoke** (`scripts/smoke.sh`, then the frontend's Playwright spec, S0-20). A smoke failure stops the run before the prod approval.
-5. **Prod (S0-16):** `ReleaseInfo` prints the three commits, then **manual approval** (`PromoteToProd`, emailed to the owner), then an **RDS snapshot** `therapy-service-hours-prod-pre-release-<timestamp>` (the newest three are kept), then data → migrate → app → web → frontend sync → smoke, using the **same assets** that passed dev. Rejecting leaves prod untouched.
+5. **Prod (S0-16), off until M3:** `RELEASE.deployProd` in `config/release.ts` is `false` (owner decision 2026-10-11), so runs end after the dev smoke test. When it is `true`: `ReleaseInfo` prints the three commits, then **manual approval** (`PromoteToProd`, emailed to the owner), then an **RDS snapshot** `therapy-service-hours-prod-pre-release-<timestamp>` (the newest three are kept), then data → migrate → app → web → frontend sync → smoke, using the **same assets** that passed dev. Rejecting leaves prod untouched.
 
 Failures, approval requests and successes email the owner through the `therapy-service-hours-pipeline` SNS topic, sent by two EventBridge rules on CodePipeline's state-change events (`therapy-service-hours-pipeline-run-finished`, `-approval-needed`).
 
