@@ -93,7 +93,7 @@ You receive "pipeline execution failed". Then:
 | Failed at | Likely cause | First response |
 |---|---|---|
 | Source | GitHub connection not authorized or revoked | Re-authorize the connection (section 2, step 2), then **Retry** |
-| Backend / Frontend / Synth | A test, lint, audit or drift-gate failure on `main` | Reproduce locally on that commit; fix forward with a PR. `npm audit` failures: update the dependency or wait for a fix; do not lower the audit level. Drift gate: run `npm run api:sync` in the frontend and merge |
+| Backend / Frontend / Synth | A test, lint or drift-gate failure on `main` | Reproduce locally on that commit; fix forward with a PR. (Dependency audits are not a release gate: they run on PRs and in the weekly `audit` workflow, which opens no deploy risk; fix its findings with a dependency update PR.) Drift gate: run `npm run api:sync` in the frontend and merge |
 | UpdatePipeline / Assets | IAM or bootstrap problem | Check the CodeBuild log; if the CDK bootstrap stack changed, re-run bootstrap (owner) |
 | Deploy (CloudFormation) | Resource error | CloudFormation console → the stack → **Events**, first `*_FAILED` row. The stack rolls back by itself; **wait for `UPDATE_ROLLBACK_COMPLETE`** (or `ROLLBACK_COMPLETE`) before anything else |
 | ConcurrencyPreflight-* | `PREFLIGHT FAIL`: the api Lambda's reserved concurrency would leave under 100 unreserved Lambda concurrency in the account. Nothing was deployed | Check `aws lambda get-account-settings`. Request a higher quota (`aws service-quotas request-service-quota-increase --service-code lambda --quota-code L-B99A9384 --desired-value 1000`), or lower `api.reservedConcurrency` in `config/` by PR. Then **Retry** |

@@ -72,7 +72,7 @@ aws cloudwatch set-alarm-state --alarm-name therapy-service-hours-dev-api-5xx --
 `lib/pipeline/pipeline-stack.ts` defines one CDK Pipelines pipeline, `therapy-service-hours` (CodePipeline V2, **queued** runs):
 
 1. **Source:** `main` of all three repos through one GitHub CodeConnections connection. A merge to any of them starts a run.
-2. **Build** (parallel, fail fast): backend (`go vet`, `go test`, arm64 Lambda binaries), frontend (`npm audit`, lint, type check, format, tests, **API drift gate**, build), then infra synth (type check, tests, `cdk synth` with the budget guard) using the backend binaries.
+2. **Build** (parallel, fail fast): backend (`go vet`, `go test`, arm64 Lambda binaries), frontend (lint, type check, format, tests, **API drift gate**, build), then infra synth (type check, tests, `cdk synth` with the budget guard) using the backend binaries.
 3. **UpdatePipeline:** self-mutation from the infra repo.
 4. **Assets**, then **Dev:** data → migrate → app → web → frontend sync → **smoke** (`scripts/smoke.sh`, then the frontend's Playwright spec, S0-20). A smoke failure stops the run before the prod approval.
 5. **Prod (S0-16):** `ReleaseInfo` prints the three commits, then **manual approval** (`PromoteToProd`, emailed to the owner), then an **RDS snapshot** `therapy-service-hours-prod-pre-release-<timestamp>` (the newest three are kept), then data → migrate → app → web → frontend sync → smoke, using the **same assets** that passed dev. Rejecting leaves prod untouched.

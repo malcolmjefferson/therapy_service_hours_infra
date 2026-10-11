@@ -111,12 +111,13 @@ describe('release pipeline (S0-14, ADR-0005)', () => {
       'npm run lint',
       'npm run typecheck',
       'npm run format:check',
-      'npm audit --audit-level=high',
       'npm run api:drift -- --backend-spec ../backend/api/openapi.yaml',
       'npx cdk synth',
     ]) {
       expect(specs).toContain(cmd);
     }
+    // Dependency audits run in GitHub Actions (PRs and weekly), never as a release gate.
+    expect(specs).not.toContain('npm audit');
   });
 
   test('dev: data, migrate, app, web, frontend sync, then smoke (ADR-0003, S0-15)', () => {
