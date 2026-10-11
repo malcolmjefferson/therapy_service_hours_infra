@@ -1,8 +1,15 @@
 # Google OAuth setup (S1-01)
 
-**State: prepared, not deployed.** On 2026-10-11 the owner confirmed the dev secret does not
-exist. Both environments have `auth.enabled: false`; merging this preparation creates no
-Cognito resources and makes no Google secret lookup. S1-01 stays in progress until setup and
+**State: AWS credential setup verified; Cognito not deployed.** On 2026-10-11 the owner
+reported Google OAuth setup complete. AWS checks confirmed the dev secret
+`therapy-service-hours/dev/google-oauth` exists in `us-west-2`, is not scheduled for deletion,
+and has an `AWSCURRENT` version. That version contains exactly `client_id` and `client_secret`,
+both nonempty strings; the ID has Google's expected `.apps.googleusercontent.com` suffix.
+Values were inspected only in memory and were never printed. The supplied `thrapy-...` spelling
+was not found; the existing `therapy-...` name already matches config. Google console settings
+and credential validity are not proved by these structural checks; console review awaits sign-in.
+Both environments have `auth.enabled: false`; merging this preparation creates no
+Cognito resources and makes no Google secret lookup. S1-01 stays in progress until activation and
 deployment verification finish. The owner creates the Google client; credential values never
 belong in chat, Git, CDK context, logs or the SPA bundle.
 
