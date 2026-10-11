@@ -7,7 +7,7 @@
 
 - **Slice S0 (walking skeleton):** 16 done, 0 in review, 0 in progress, 0 not started (of 16 tickets touching this repo).
 - **AWS:** S0 is complete through dev: the pipeline (2026-10-11) released dev end to end (data, migrate, app, web, frontend sync, smoke tests) at https://dx5eaoy4duyuy.cloudfront.net. **Prod deploys are deferred to milestone M3** (owner decision 2026-10-11): `RELEASE.deployProd` is off, so runs end after dev. The $50 account budget moves to the pipeline stack so it is active now.
-- **S1:** execution started; ADR-0008–0011 accepted by the owner on 2026-10-11. The revised plan has 20 tickets / 23.5 days (`docs/jira/S1-secure-sign-in.md`). S1-01 Cognito configuration is prepared with auth disabled: the dev Google secret and required JSON fields are verified in AWS; Google console review and S1-03's allowlist attachment remain before activation. ADR-0007's provisioned concurrency cost (about $1–3/month) is approved. At M3, set `RELEASE.deployProd` to `true` in a PR to add the approval and prod stage.
+- **S1:** execution started; ADR-0008–0011 accepted by the owner on 2026-10-11. The revised plan has 20 tickets / 23.5 days (`docs/jira/S1-secure-sign-in.md`). S1-01 Cognito configuration is prepared with auth disabled: the dev AWS secret, matching Google client ID, saved origin and redirect URI are verified. Scope review, S1-03's allowlist attachment and live federation remain before completion. ADR-0007's provisioned concurrency cost (about $1–3/month) is approved. At M3, set `RELEASE.deployProd` to `true` in a PR to add the approval and prod stage.
 
 ## Tickets
 
@@ -37,4 +37,4 @@ Statuses: **not started**, **in progress**, **in review** (PR open), **done** (m
 | ID | Title | Status | PRs | Notes |
 |---|---|---|---|---|
 | S1-02 | Auth design decisions | in progress | — | Owner accepted ADR-0008–0011 as proposed on 2026-10-11; decision docs prepared for review. Live federation and latency proof remain S1-18. |
-| S1-01 | Cognito pool, Google IdP and clients | in progress | [infra #32](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/32) | Resources prepared and synth-tested. AWS dev secret `therapy-service-hours/dev/google-oauth` and required fields verified 2026-10-11; console review, S1-03 attachment and deployment proof remain. Auth stays disabled. See docs/google-oauth-setup.md. |
+| S1-01 | Cognito pool, Google IdP and clients | in progress | [infra #32](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/32) | Resources prepared and synth-tested. AWS dev secret/fields, matching Google client ID and saved origin/redirect verified 2026-10-11. Scope review, S1-03 attachment and live deployment proof remain; auth stays disabled. See docs/google-oauth-setup.md. |

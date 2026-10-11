@@ -1,14 +1,18 @@
 # Google OAuth setup (S1-01)
 
-**State: AWS credential setup verified; Cognito not deployed.** On 2026-10-11 the owner
+**State: AWS secret and Google redirect settings verified; Cognito not deployed.** On 2026-10-11 the owner
 reported Google OAuth setup complete. AWS checks confirmed the dev secret
 `therapy-service-hours/dev/google-oauth` exists in `us-west-2`, is not scheduled for deletion,
 and has an `AWSCURRENT` version. That version contains exactly `client_id` and `client_secret`,
 both nonempty strings; the ID has Google's expected `.apps.googleusercontent.com` suffix.
-Values were inspected only in memory and were never printed. The supplied `thrapy-...` spelling
-was not found; the existing `therapy-...` name already matches config. Google console settings
-and credential validity are not proved by these structural checks. Google sign-in succeeded,
-but console navigation repeatedly returned to sign-in, blocking independent redirect/scope review.
+Secrets Manager values were inspected only in memory and were never printed. The supplied
+`thrapy-...` spelling was not found; the existing `therapy-...` name already matches config.
+Read-only Google console review confirmed the saved authorized JavaScript origin and redirect
+URI exactly match the dev settings below. The reviewed Web application client's ID also
+matches the AWS secret (only a match flag was displayed; no credential values were recorded).
+Earlier sign-in redirects were resolved after the owner opened the Clients page. Scope review
+and live credential/federation verification remain outstanding; saved URLs and structural
+secret checks do not prove an end-to-end sign-in.
 Both environments have `auth.enabled: false`; merging this preparation creates no
 Cognito resources and makes no Google secret lookup. S1-01 stays in progress until activation and
 deployment verification finish. The owner creates the Google client; credential values never
