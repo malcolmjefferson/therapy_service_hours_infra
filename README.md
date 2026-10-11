@@ -117,6 +117,10 @@ docs/runbook.md   Operating procedures (S0-21)
 
 ## Contributing
 
+S1 Cognito preparation is documented in [Google OAuth setup](docs/google-oauth-setup.md).
+Both environments keep auth disabled until credential setup is verified and S1-03 wires the
+invitation allowlist. The dev secret is verified; this preparation does not deploy working sign-in.
+
 - `main` is protected: changes go through a pull request with passing checks (ARC-49).
 - Work on a branch named after the ticket, for example `feat/S0-03-backend-skeleton`.
 - Fill in the PR template, including the standards checklists.

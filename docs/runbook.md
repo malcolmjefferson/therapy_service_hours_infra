@@ -254,3 +254,33 @@ allowlist with manual account creation for real users. S1-06 owns the transactio
 S1-03 must attach `preSignUpDatabaseConnectPolicy` only to the trigger execution role, connect as
 `presignup_ro`, and retain isolated-subnet/no-internet constraints. The tested policy helper is
 defined in `lib/app/presignup-policy.ts`; this foundation release does not create the trigger.
+
+## 14. Cognito setup and pool replacement (S1-01; rehearse)
+
+Follow [Google OAuth setup](google-oauth-setup.md) for the two redirect URLs, secret references,
+feature plan/cost and activation prerequisites. Cognito is disabled in both environments
+until the Google credentials and invitation allowlist attachment exist.
+
+The production pool lives in the **data stack**, has deletion protection and is retained on
+delete/replacement (ADR-0009). Replacing it changes every Cognito subject and invalidates
+existing `users.cognito_sub` bindings. Rebinding must preserve internal user IDs and all
+user-owned data. This recovery procedure requires the S1-06 binding path and S1-09 seed/recovery
+tool; neither is implemented in this preparation, so it is **not yet an executable drill**.
+
+1. Schedule a sign-in maintenance window; retain the old pool and take an RDS recovery point.
+   Save the old pool/client/domain configuration and the affected internal user IDs for rollback.
+2. Deploy the replacement pool and allowlist attachment, update Google's redirect registration
+   if the domain changes, then coordinate the JWT issuer/audience and frontend/CSP configuration.
+   Old-pool tokens must stop being accepted before clearing the old bindings.
+3. Through the reviewed VPC recovery/seed operation, clear `cognito_sub` for affected active
+   users in a transaction. Preserve their UUIDs, organization, status and database role flags.
+   Create fresh pending invitations for those active emails (or renew a still-pending invite),
+   keeping accepted/revoked history; first sign-in to a new pool needs a pending, unexpired
+   invitation even when a user row already exists. Never reactivate a deactivated user.
+4. Have an admin sign in with verified Google email. Confirm the existing user UUID is rebound
+   to the new subject, the invitation is accepted once and the original roles/data remain.
+   Repeat for an ordinary user; confirm an uninvited or deactivated account is denied. No manual
+   assignment of arbitrary subjects or Cognito group-based privilege elevation is allowed.
+5. Keep the old pool and recovery point until verification is complete. If binding fails, keep
+   sign-in unavailable, restore the saved configuration/bindings and investigate. Record the
+   rehearsal outcome in S1-18/S11 before treating this as proven recovery.
