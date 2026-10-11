@@ -46,7 +46,8 @@ describe('api (S0-11)', () => {
   });
 
   test('the role may connect to the database only as app_rw (ADR-0001, SEC-64)', () => {
-    const policies = Object.values(appTemplate().findResources('AWS::IAM::Policy'));
+    const policies = Object.entries(appTemplate().findResources('AWS::IAM::Policy'))
+      .filter(([id]) => id.startsWith('ApiFunctionServiceRoleDefaultPolicy')).map(([, policy]) => policy);
     const statements = policies.flatMap((p) => (p as { Properties: { PolicyDocument: { Statement: Record<string, unknown>[] } } }).Properties.PolicyDocument.Statement);
     const connect = statements.filter((s) => s.Action === 'rds-db:connect');
     expect(connect).toHaveLength(1);
@@ -55,6 +56,7 @@ describe('api (S0-11)', () => {
     expect(parts).toContain(':rds-db:us-west-2:123456789012:dbuser:"');
     expect(parts).toContain('DbiResourceId');
     expect(parts).toContain('"/app_rw"');
+    expect(parts).not.toContain('/presignup_ro');
     const json = JSON.stringify(appTemplate().toJSON());
     expect(json).not.toMatch(/"Resource":"\*"/);
     expect(json).not.toMatch(/dbuser:\*/);

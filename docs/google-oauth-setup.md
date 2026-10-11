@@ -18,6 +18,12 @@ Cognito resources and makes no Google secret lookup. S1-01 stays in progress unt
 deployment verification finish. The owner creates the Google client; credential values never
 belong in chat, Git, CDK context, logs or the SPA bundle.
 
+S1-03 deploys the isolated-VPC pre-sign-up `live` alias first while auth remains disabled.
+Before later pool activation, verify that its provisioned concurrency is READY and that it
+rejects a synthetic uninvited event. The app construct then installs its stable named ARN into
+the data-owned pool template and grants pool-scoped alias invocation without a reverse stack
+reference. See [invitation trigger deployment](runbook.md#invitation-trigger-deployment-s1-03).
+
 ## Dev settings
 
 | Setting | Value |

@@ -48,6 +48,8 @@ export interface AuthSettings {
   readonly deletionProtection: boolean;
   /** Synthetic automated users only (ADR-0011); false in prod. */
   readonly createPasswordTestClient: boolean;
+  /** ADR-0007: one warmed isolated-VPC invitation gate; deployed before pool activation. */
+  readonly preSignUp: { readonly memoryMiB: number; readonly reservedConcurrency: number; readonly provisionedConcurrency: number };
 }
 
 /** Alerting (S0-18, ARC-44, SEC-54). */

@@ -6,6 +6,7 @@ import { ComparisonOperator } from 'aws-cdk-lib/aws-cloudwatch';
 import { ALARM_PERIOD, ALARM_THRESHOLDS } from './alerts';
 import { Api } from './api';
 import { DataStack } from './data-stack';
+import { PreSignUp } from './presignup';
 
 /** Props for {@link AppStack}. */
 export interface AppStackProps extends StackProps {
@@ -20,10 +21,17 @@ export interface AppStackProps extends StackProps {
  */
 export class AppStack extends Stack {
   readonly api: Api;
+  readonly preSignUp: PreSignUp;
 
   constructor(scope: Construct, id: string, props: AppStackProps) {
     super(scope, id, props);
     const prefix = resourcePrefix(props.config);
+
+    this.preSignUp = new PreSignUp(this, 'PreSignUp', {
+      config: props.config, prefix, artifacts: props.artifacts,
+      vpc: props.data.network.vpc, securityGroup: props.data.network.appSecurityGroup,
+      database: props.data.database.instance, userPool: props.data.auth?.userPool,
+    });
 
     this.api = new Api(this, 'Api', {
       config: props.config,
@@ -35,6 +43,22 @@ export class AppStack extends Stack {
     });
 
     const alerts = props.data.alerts;
+    alerts.alarm(this, 'PreSignUpErrorsAlarm', {
+      alarmName: `${prefix}presignup-errors`, alarmDescription: 'Pre-sign-up refusals or database errors; inspect safe decision codes',
+      metric: this.preSignUp.function.metricErrors({ period: ALARM_PERIOD, statistic: 'Sum' }),
+      threshold: ALARM_THRESHOLDS.lambdaErrors, evaluationPeriods: 1,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+    });
+    alerts.alarm(this, 'PreSignUpThrottlesAlarm', {
+      alarmName: `${prefix}presignup-throttles`, alarmDescription: 'Invitation gate exhausted its reserved execution',
+      metric: this.preSignUp.function.metricThrottles({ period: ALARM_PERIOD, statistic: 'Sum' }),
+      threshold: 1, evaluationPeriods: 1, comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+    });
+    alerts.alarm(this, 'PreSignUpDurationAlarm', {
+      alarmName: `${prefix}presignup-duration`, alarmDescription: 'Invitation gate is approaching the Cognito five-second ceiling',
+      metric: this.preSignUp.function.metricDuration({ period: ALARM_PERIOD, statistic: 'Maximum' }),
+      threshold: 4000, evaluationPeriods: 1, comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+    });
     const fn = this.api.function;
     alerts.alarm(this, 'Api5xxAlarm', {
       alarmName: `${prefix}api-5xx`,
@@ -66,5 +90,6 @@ export class AppStack extends Stack {
       value: this.api.httpApi.apiEndpoint,
     });
     new CfnOutput(this, 'ApiFunctionName', { value: this.api.function.functionName });
+    new CfnOutput(this, 'PreSignUpAliasArn', { value: this.preSignUp.alias.functionArn });
   }
 }

@@ -257,6 +257,49 @@ defined in `lib/app/presignup-policy.ts`; this foundation release does not creat
 
 ## 14. Cognito setup and pool replacement (S1-01; rehearse)
 
+### Invitation trigger deployment (S1-03)
+
+Release the backend `cmd/presignup` implementation first, then merge the paired infra change
+that adds `presignup` to `BACKEND_LAMBDAS`. Keep `auth.enabled: false` for this preparation
+release. The app stack deploys `therapy-service-hours-dev-presignup:live` with 128 MiB,
+reserved concurrency 1 and provisioned concurrency 1 (ADR-0007's approved dev cost). The
+Go process opens and pings one `presignup_ro` IAM/TLS connection before starting the handler;
+initialization failure prevents the provisioned alias from becoming ready.
+
+Before enabling dev auth in a later PR, verify the successful preparation release and
+`aws lambda get-provisioned-concurrency-config --function-name therapy-service-hours-dev-presignup --qualifier live`:
+status must be READY and allocated/requested concurrency both 1. Also invoke the qualified
+alias with a synthetic Google event for an uninvited `example.invalid` email; it must return
+`SIGN_UP_NOT_ALLOWED`. Do not print event attributes or credentials when recording evidence.
+
+On activation, the app construct installs the **stable named alias ARN** into the data-owned
+pool's CloudFormation `LambdaConfig.PreSignUp`. It computes the ARN using the data stack's
+account/region and naming convention, never an app resource token. The only cross-stack
+resource references remain app → data. The app grants Cognito invocation on the qualified
+alias only, scoped to this pool ARN/account. The prepared alias must exist before activating
+a new pool; missing invocation permission during the data-before-app release denies sign-in.
+Keeping the trigger in the pool template also preserves it during subsequent pool updates.
+Do not call `userPool.addTrigger(appLambda)` or perform a partial `UpdateUserPool` mutation.
+
+The trigger reads only `users` and `invitations`, has no internet or write rights, and never
+consumes the invitation. All policy denials return `SIGN_UP_NOT_ALLOWED`; DB/deadline errors
+return `SIGN_UP_UNAVAILABLE`. Logs expose only code, request ID and duration. The 3-second
+connect and 4-second request limits fail closed. New alarms cover errors, throttles and
+maximum duration at 4 seconds; an error alarm includes intentional policy refusals, so inspect
+the safe decision code before diagnosing database availability.
+
+For ADR-0011, only dev admin creation of `test-invited`, `test-uninvited`, `test-supervisor`
+with matching `<username>@example.invalid` emails bypasses this gate. The uninvited native
+user exists to prove API denial; Google federation has no bypass. S1-09 creates these users
+from outside the VPC and their DB fixtures through its seed Lambda. Returning Cognito users
+do not reach pre-sign-up; S1-06 must reject deactivated users on every API request.
+
+S1-18 still must record real federation and cold/warm p99 against Cognito's five-second ceiling.
+Static timeout settings and provisioned concurrency are not measured latency proof. Prod
+activation remains M3 and needs the same alias preparation before pool creation.
+
+### Pool replacement recovery
+
 Follow [Google OAuth setup](google-oauth-setup.md) for the two redirect URLs, secret references,
 feature plan/cost and activation prerequisites. Cognito is disabled in both environments
 until the Google credentials and invitation allowlist attachment exist.

@@ -33,7 +33,7 @@ export const RELEASE_BRANCH = 'main';
  */
 export const MIN_UNRESERVED_CONCURRENCY = 100;
 
-export const BACKEND_LAMBDAS = ['api', 'migrate', 'dbbootstrap', 'dbbootstrap-provider'] as const;
+export const BACKEND_LAMBDAS = ['api', 'migrate', 'dbbootstrap', 'dbbootstrap-provider', 'presignup'] as const;
 
 /** Props for {@link PipelineStack}. */
 export interface PipelineStackProps extends StackProps {
@@ -276,7 +276,7 @@ export class PipelineStack extends Stack {
   private concurrencyPreflightStep(config: EnvConfig): pipelines.CodeBuildStep {
     const fn = `${resourcePrefix(config)}api`;
     return new pipelines.CodeBuildStep(`ConcurrencyPreflight-${config.envName}`, {
-      env: { FUNCTION_NAME: fn, WANT: String(config.api.reservedConcurrency), MIN_UNRESERVED: String(MIN_UNRESERVED_CONCURRENCY) },
+      env: { FUNCTION_NAME: fn, WANT: String(config.api.reservedConcurrency), TRIGGER_NAME: `${resourcePrefix(config)}presignup`, TRIGGER_WANT: String(config.auth.preSignUp.reservedConcurrency), MIN_UNRESERVED: String(MIN_UNRESERVED_CONCURRENCY) },
       commands: [
         // POSIX sh only: CodeBuild runs these commands with /bin/sh.
         'LIMIT="$(aws lambda get-account-settings --query AccountLimit.ConcurrentExecutions --output text)"',
@@ -284,7 +284,9 @@ export class PipelineStack extends Stack {
         // The function's current reservation (none before its first deploy) is already outside UNRESERVED.
         'CURRENT="$(aws lambda get-function-concurrency --function-name "$FUNCTION_NAME" --query ReservedConcurrentExecutions --output text 2>/dev/null || true)"',
         'case "$CURRENT" in ""|None) CURRENT=0;; esac',
-        'AFTER=$((UNRESERVED + CURRENT - WANT))',
+        'TRIGGER_CURRENT="$(aws lambda get-function-concurrency --function-name "$TRIGGER_NAME" --query ReservedConcurrentExecutions --output text 2>/dev/null || true)"',
+        'case "$TRIGGER_CURRENT" in ""|None) TRIGGER_CURRENT=0;; esac',
+        'AFTER=$((UNRESERVED + CURRENT + TRIGGER_CURRENT - WANT - TRIGGER_WANT))',
         'echo "Lambda concurrency: limit $LIMIT, unreserved $UNRESERVED; $FUNCTION_NAME reserves $CURRENT now, $WANT after this release; unreserved after: $AFTER (minimum $MIN_UNRESERVED)"',
         'if [ "$AFTER" -lt "$MIN_UNRESERVED" ]; then echo "PREFLIGHT FAIL: raise the Lambda concurrent executions quota (Service Quotas, L-B99A9384) or lower api.reservedConcurrency; nothing has been deployed." >&2; exit 1; fi',
       ],
@@ -293,7 +295,7 @@ export class PipelineStack extends Stack {
         new iam.PolicyStatement({ actions: ['lambda:GetAccountSettings'], resources: ['*'] }),
         new iam.PolicyStatement({
           actions: ['lambda:GetFunctionConcurrency'],
-          resources: [this.formatArn({ service: 'lambda', resource: 'function', resourceName: fn, arnFormat: ArnFormat.COLON_RESOURCE_NAME })],
+          resources: [fn, `${resourcePrefix(config)}presignup`].map((name) => this.formatArn({ service: 'lambda', resource: 'function', resourceName: name, arnFormat: ArnFormat.COLON_RESOURCE_NAME })),
         }),
       ],
     });
