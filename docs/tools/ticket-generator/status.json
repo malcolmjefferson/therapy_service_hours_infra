@@ -245,7 +245,10 @@
       "status": "in progress",
       "merged": false,
       "notes": "Started as the prerequisite for S1-01/S1-03 activation and admission acceptance. The backend seed service and paired infra dev step are prepared and locally tested: operator-only requests, production guards, transaction rollback, idempotency and safe logs. The owner selected the first dev admin. Auth remains disabled. Release build-discovery before backend seed, then infra; live seed rerun and admission verification remain pending.",
-      "prs": []
+      "prs": [
+        "backend/23",
+        "infra/35"
+      ]
     }
   }
 }

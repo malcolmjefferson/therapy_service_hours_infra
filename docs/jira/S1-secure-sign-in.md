@@ -584,6 +584,8 @@ Returns the current user's profile, roles and organization via a dedicated DTO.
 
 Started as the prerequisite for S1-01/S1-03 activation and admission acceptance. The backend seed service and paired infra dev step are prepared and locally tested: operator-only requests, production guards, transaction rollback, idempotency and safe logs. The owner selected the first dev admin. Auth remains disabled. Release build-discovery before backend seed, then infra; live seed rerun and admission verification remain pending.
 
+Open PRs: [backend #23](https://github.com/malcolmjefferson/therapy_service_hours_backend/pull/23), [infra #35](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/35).
+
 **Description**
 
 There is no direct database access in any environment (no bastion, by budget), so seeding is a VPC Lambda invoked by a thin script, following ADR-0003's pattern for migrate. It idempotently creates the Default Organization, the first admin's invitation and users row, and in dev only the invitations and users rows for the test accounts ADR-0011 needs. The Cognito half of those test accounts cannot live here, because Cognito admin APIs are unreachable from the VPC (CLAUDE.md §4.1): a non-VPC pipeline step creates them. Adding the function means adding it to BACKEND_LAMBDAS and BackendLambda after the backend binary is in a released build.
