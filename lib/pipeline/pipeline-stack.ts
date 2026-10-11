@@ -25,6 +25,13 @@ export const REPOSITORIES = {
 export const RELEASE_BRANCH = 'main';
 
 /** The Lambdas the backend build produces, one directory each under its output. */
+/**
+ * Unreserved Lambda concurrency that must remain after the api Lambda's reservation. AWS's own
+ * floor is 10; the margin keeps headroom for the other functions (migrate, role bootstrap,
+ * CDK helpers) and the other environment.
+ */
+export const MIN_UNRESERVED_CONCURRENCY = 100;
+
 export const BACKEND_LAMBDAS = ['api', 'migrate', 'dbbootstrap', 'dbbootstrap-provider'] as const;
 
 /** Props for {@link PipelineStack}. */
@@ -152,7 +159,7 @@ export class PipelineStack extends Stack {
     this.pipeline.addStage(this.dev, {
       stackSteps: [
         // ADR-0003: migrations run after the data stack and before the app stack.
-        { stack: this.dev.dataStack, post: [this.migrateStep(this.dev, devConfig)] },
+        { stack: this.dev.dataStack, pre: [this.concurrencyPreflightStep(devConfig)], post: [this.migrateStep(this.dev, devConfig)] },
         { stack: this.dev.webStack, post: [this.frontendSyncStep(this.dev, devConfig)] },
       ],
       post: [this.smokeStep(this.dev, devConfig)],
@@ -178,11 +185,15 @@ export class PipelineStack extends Stack {
         'revisions of this execution (also printed by the ReleaseInfo step). Rejecting leaves prod untouched.',
     });
     approval.addStepDependency(releaseInfo);
+    // The preflight runs before the snapshot, so a blocked release changes nothing at all.
+    const prodPreflight = this.concurrencyPreflightStep(prodConfig);
+    const prodSnapshot = this.snapshotStep(prodConfig);
+    prodSnapshot.addStepDependency(prodPreflight);
     this.pipeline.addStage(this.prod, {
       pre: [releaseInfo, approval],
       stackSteps: [
         // ADR-0003: snapshot, then data stack, then migrations, then the app.
-        { stack: this.prod.dataStack, pre: [this.snapshotStep(prodConfig)], post: [this.migrateStep(this.prod, prodConfig)] },
+        { stack: this.prod.dataStack, pre: [prodPreflight, prodSnapshot], post: [this.migrateStep(this.prod, prodConfig)] },
         { stack: this.prod.webStack, post: [this.frontendSyncStep(this.prod, prodConfig)] },
       ],
       post: [this.smokeStep(this.prod, prodConfig)],
@@ -233,6 +244,38 @@ export class PipelineStack extends Stack {
       },
       targets: [
         target(`Pipeline ${field('$.detail.pipeline')} run ${field('$.detail.execution-id')}: approval ${field('$.detail.action')} is waiting. Check ReleaseInfo, then approve or reject in the CodePipeline console.`),
+      ],
+    });
+  }
+
+  /**
+   * Fails the release before anything in the environment changes if the api Lambda's reserved
+   * concurrency would not fit the account's Lambda concurrency quota. Without it, the data stack
+   * and migrations apply and only the app stack then fails, leaving the environment half-released
+   * (as on the first dev run: the new account's quota was 10, so no reservation was possible).
+   */
+  private concurrencyPreflightStep(config: EnvConfig): pipelines.CodeBuildStep {
+    const fn = `${resourcePrefix(config)}api`;
+    return new pipelines.CodeBuildStep(`ConcurrencyPreflight-${config.envName}`, {
+      env: { FUNCTION_NAME: fn, WANT: String(config.api.reservedConcurrency), MIN_UNRESERVED: String(MIN_UNRESERVED_CONCURRENCY) },
+      commands: [
+        // POSIX sh only: CodeBuild runs these commands with /bin/sh.
+        'LIMIT="$(aws lambda get-account-settings --query AccountLimit.ConcurrentExecutions --output text)"',
+        'UNRESERVED="$(aws lambda get-account-settings --query AccountLimit.UnreservedConcurrentExecutions --output text)"',
+        // The function's current reservation (none before its first deploy) is already outside UNRESERVED.
+        'CURRENT="$(aws lambda get-function-concurrency --function-name "$FUNCTION_NAME" --query ReservedConcurrentExecutions --output text 2>/dev/null || true)"',
+        'case "$CURRENT" in ""|None) CURRENT=0;; esac',
+        'AFTER=$((UNRESERVED + CURRENT - WANT))',
+        'echo "Lambda concurrency: limit $LIMIT, unreserved $UNRESERVED; $FUNCTION_NAME reserves $CURRENT now, $WANT after this release; unreserved after: $AFTER (minimum $MIN_UNRESERVED)"',
+        'if [ "$AFTER" -lt "$MIN_UNRESERVED" ]; then echo "PREFLIGHT FAIL: raise the Lambda concurrent executions quota (Service Quotas, L-B99A9384) or lower api.reservedConcurrency; nothing has been deployed." >&2; exit 1; fi',
+      ],
+      rolePolicyStatements: [
+        // GetAccountSettings has no resource-level permissions (read-only, account quota only).
+        new iam.PolicyStatement({ actions: ['lambda:GetAccountSettings'], resources: ['*'] }),
+        new iam.PolicyStatement({
+          actions: ['lambda:GetFunctionConcurrency'],
+          resources: [this.formatArn({ service: 'lambda', resource: 'function', resourceName: fn, arnFormat: ArnFormat.COLON_RESOURCE_NAME })],
+        }),
       ],
     });
   }

@@ -60,6 +60,7 @@ describe('release pipeline (S0-14, ADR-0005)', () => {
     expect(ordered).toEqual([
       'ReleaseInfo',
       'PromoteToProd',
+      'therapy-service-hours-prod-data.ConcurrencyPreflight-prod',
       'therapy-service-hours-prod-data.Snapshot-prod',
       'therapy-service-hours-prod-data.Deploy',
       'therapy-service-hours-prod-data.Migrate-prod',
@@ -126,6 +127,7 @@ describe('release pipeline (S0-14, ADR-0005)', () => {
       .map((a) => a.Name)
       .filter((n) => !n.endsWith('.Prepare'));
     expect(ordered).toEqual([
+      'therapy-service-hours-dev-data.ConcurrencyPreflight-dev',
       'therapy-service-hours-dev-data.Deploy',
       'therapy-service-hours-dev-data.Migrate-dev',
       'therapy-service-hours-dev-app.Deploy',
@@ -182,6 +184,31 @@ describe('release pipeline (S0-14, ADR-0005)', () => {
       ?.Actions.find((a) => a.Name === 'Smoke-dev') as unknown as { InputArtifacts: { Name: string }[] };
     expect(devSmoke.InputArtifacts).toHaveLength(2);
     expect(JSON.stringify(devSmoke.InputArtifacts)).toContain('therapy_service_hours_frontend');
+  });
+
+  test('a concurrency preflight fails the release before the data stack if the api reservation cannot fit', () => {
+    const t = pipelineTemplate();
+    const projects = Object.values(t.findResources('AWS::CodeBuild::Project')).map((p) => JSON.stringify(p));
+    const preflights = projects.filter((p) => p.includes('get-account-settings'));
+    expect(preflights).toHaveLength(2); // dev and prod
+    for (const spec of preflights) {
+      expect(spec).toContain('UnreservedConcurrentExecutions');
+      expect(spec).toContain('get-function-concurrency');
+      expect(spec).toContain('PREFLIGHT FAIL');
+      expect(spec).toContain('exit 1');
+    }
+    // Runs before anything changes: ahead of the data stack in dev, ahead of the snapshot in prod.
+    const order = (stage: string) =>
+      Object.fromEntries((stages(t).find((s) => s.Name === stage)?.Actions ?? []).map((a) => [a.Name, (a as { RunOrder?: number }).RunOrder ?? 0]));
+    const dev = order('Dev');
+    expect(dev['therapy-service-hours-dev-data.ConcurrencyPreflight-dev']).toBeLessThan(dev['therapy-service-hours-dev-data.Deploy']);
+    const prod = order('Prod');
+    expect(prod['therapy-service-hours-prod-data.ConcurrencyPreflight-prod']).toBeLessThan(prod['therapy-service-hours-prod-data.Snapshot-prod']);
+    // Read-only permissions: the account setting, and only the env's own api function.
+    const policies = JSON.stringify(t.findResources('AWS::IAM::Policy'));
+    expect(policies).toContain('lambda:GetAccountSettings');
+    expect(policies).toContain('function:therapy-service-hours-prod-api');
+    expect(policies).not.toContain('lambda:PutFunctionConcurrency');
   });
 
   test('no customer-managed KMS key (crossAccountKeys off, budget guard)', () => {
