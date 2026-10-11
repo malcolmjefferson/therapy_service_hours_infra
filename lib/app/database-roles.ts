@@ -14,7 +14,7 @@ import { Network } from './network';
  * Bump to re-run the bootstrap on the next deploy (for example after changing the role SQL in
  * the backend's internal/dbroles). The bootstrap is idempotent, so re-running is always safe.
  */
-export const DATABASE_ROLES_REVISION = '2';
+export const DATABASE_ROLES_REVISION = '3';
 
 /** Props for {@link DatabaseRoles}. */
 export interface DatabaseRolesProps {
@@ -26,7 +26,7 @@ export interface DatabaseRolesProps {
 }
 
 /**
- * Creates the `app_rw` and `migrator` database roles at deploy time (ADR-0001, amended 2026-10-10).
+ * Creates the `app_rw`, `migrator` and `presignup_ro` database roles at deploy time (ADR-0001, amended 2026-10-10).
  *
  * CloudFormation does not resolve Secrets Manager dynamic references in custom-resource properties,
  * and VPC Lambdas cannot reach Secrets Manager. So:

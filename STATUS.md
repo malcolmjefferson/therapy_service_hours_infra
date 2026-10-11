@@ -37,3 +37,4 @@ Statuses: **not started**, **in progress**, **in review** (PR open), **done** (m
 | ID | Title | Status | PRs | Notes |
 |---|---|---|---|---|
 | S1-02 | Auth design decisions | in progress | — | Owner accepted ADR-0008–0011 as proposed on 2026-10-11; decision docs prepared for review. Live federation and latency proof remain S1-18. |
+| S1-17 | Read-only pre-sign-up database role | in review | — | Bootstrap revision 3 and trigger-scoped IAM policy helper. Merge only after backend S1-17 is released; actual trigger and policy attachment are S1-03. |
