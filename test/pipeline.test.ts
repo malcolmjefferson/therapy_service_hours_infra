@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { App } from 'aws-cdk-lib/core';
-import { Template } from 'aws-cdk-lib/assertions';
+import { Match, Template } from 'aws-cdk-lib/assertions';
 import { PLACEHOLDER_ACCOUNT } from '../lib/account';
 import { placeholderArtifacts } from '../lib/artifacts';
 import { PipelineStack, REPOSITORIES } from '../lib/pipeline/pipeline-stack';
@@ -187,11 +187,26 @@ describe('release pipeline (S0-14, ADR-0005)', () => {
     pipelineTemplate().resourceCountIs('AWS::KMS::Key', 0);
   });
 
-  test('failures and approvals notify the owner by email', () => {
+  test('failures, successes and approvals notify the owner by email through EventBridge', () => {
     const t = pipelineTemplate();
     t.hasResourceProperties('AWS::SNS::Subscription', { Protocol: 'email', Endpoint: 'malcolmj0415@gmail.com' });
-    t.hasResourceProperties('AWS::CodeStarNotifications::NotificationRule', {
-      EventTypeIds: ['codepipeline-pipeline-pipeline-execution-failed', 'codepipeline-pipeline-manual-approval-needed', 'codepipeline-pipeline-pipeline-execution-succeeded'],
+    // CodeStar Notifications rejected the topic at deploy time; EventBridge rules replace it.
+    t.resourceCountIs('AWS::CodeStarNotifications::NotificationRule', 0);
+    t.hasResourceProperties('AWS::Events::Rule', {
+      EventPattern: {
+        source: ['aws.codepipeline'],
+        'detail-type': ['CodePipeline Pipeline Execution State Change'],
+        detail: { state: ['FAILED', 'SUCCEEDED'] },
+      },
+      Targets: [{ Arn: { Ref: Match.stringLikeRegexp('Notifications') } }],
     });
+    t.hasResourceProperties('AWS::Events::Rule', {
+      EventPattern: {
+        'detail-type': ['CodePipeline Action Execution State Change'],
+        detail: { state: ['STARTED'], type: { category: ['Approval'] } },
+      },
+    });
+    // EventBridge may publish to the topic.
+    expect(JSON.stringify(t.findResources('AWS::SNS::TopicPolicy'))).toContain('events.amazonaws.com');
   });
 });
