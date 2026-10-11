@@ -89,58 +89,86 @@ t("S0-21","Task","Runbook v0 and README per repo",
   1,"S0-16","NFR-DOC-01","US-39","docs","Medium")
 
 # ---------------- S1 Secure sign-in ----------------
-t("S1-01","Story","Cognito user pool, Google IdP, app client, hosted UI, Secrets Manager reference",
-  "CDK auth construct: user pool with self sign-up disabled, groups admin and supervisor, Google identity provider with client secret from Secrets Manager (owner creates the Google OAuth client), app client with code+PKCE, hosted UI domain, callback URLs from the CloudFront domain.",
-  "Owner-provided Google OAuth client id/secret stored in Secrets Manager, not committed|Callback/logout URLs match dev and prod CloudFront domains (ordering documented)|Self sign-up disabled",
-  2,"S0-15,S1-02","FR-AUTH-01,NFR-SEC-04","US-01","infra,auth","Highest")
-t("S1-02","Spike","Spike: invited-email binding for Google-only sign-in (OQ-01 decided)",
-  "OQ-01 is decided: Google sign-in only, no email/password. Time-boxed to 1 day. Document how federated Google users bind to pre-created Cognito users, and the dev E2E test-user strategy.",
-  "Binding approach recorded in ADR-0002 notes|Proof that an invited email binds to one Cognito identity without duplicates|Test-user approach for Playwright agreed",
-  1,"S0-02","FR-AUTH-01,FR-AUTH-03","US-01","spike,auth","Highest")
-t("S1-03","Story","PreSignUp Lambda enforcing the invitation allowlist",
-  "VPC Lambda trigger connecting with a read-only IAM database role; rejects emails not in invitations or belonging to deactivated users; covers federated Google sign-ins.",
-  "Uninvited Google email is rejected with a stable error code|Invited email passes|Deactivated user rejected|Lambda has no internet and no write rights",
-  1.5,"S1-01,S1-04","FR-AUTH-01,FR-AUTH-05","US-02","backend,auth,db","Highest")
+t("S1-02","Spike","Spike: auth design decisions (token, binding, allowlist, test users, storage)",
+  "Decision-first half of the spike, before any auth code. OQ-01 is already decided (Google sign-in only). Settle and record the five S1 decisions the plan review raised: which token the SPA sends and which claims the API may trust (ADR-0008), how a federated Google user binds to an existing users row (ADR-0008), where the pre-sign-up allowlist is read from and how it fits Cognito's fixed 5 second synchronous trigger budget (ADR-0007), how the invitation lifecycle and just-in-time user provisioning work (ADR-0010), and how automated sign-in tests get a token without driving Google's consent screen (ADR-0011). ADR-0009 records where the user pool lives and how callback URLs are configured.",
+  "ADR-0008 to ADR-0011 written and accepted by the owner before S1-01 starts (ADR-0007 accepted 2026-10-11)|The token decision names the claim the user lookup uses and is reflected in api/openapi.yaml wording|Token storage and page-reload behaviour recorded against SEC-35 and FE-61|Test-user strategy recorded, including any accepted deviation from SEC-01|No implementation in this ticket",
+  1,"S0-02","FR-AUTH-01,FR-AUTH-03","US-01","spike,auth,decision","Highest")
 t("S1-04","Story","Migration: organizations, users, invitations; seed Default Organization",
-  "goose migration creating the tables per CLAUDE.md §9 with citext email uniqueness, NOT NULL organization, role mirror columns, status check; sqlc queries for lookup by email/sub.",
-  "Applies cleanly via migrate Lambda|users.email unique case-insensitively|Default Organization row created idempotently",
-  1.5,"S0-10","FR-AUTH-02,FR-AUTH-03","US-46","backend,db","Highest")
-t("S1-05","Task","OpenAPI: /me, security scheme, Problem responses",
-  "Spec the bearer JWT scheme, GET /me response (id, name, email, roles, organization), and standard 401/403/404 problem responses; regenerate server and frontend types.",
-  "Spectral clean|Frontend drift gate passes|Examples contain only fictional data",
-  1,"S0-19,S1-04","FR-AUTH-04","US-01","api,adr-0006","High")
+  "goose migration creating the tables per CLAUDE.md §9 with citext email uniqueness, NOT NULL organization, role mirror columns, status check; sqlc queries for lookup by email and by sub. Invitations carry the lifecycle ADR-0010 settles: expires_at, status (pending, accepted, revoked) and a partial unique index on email for pending invitations only, so a re-invite after a delete or an email change does not collide.",
+  "Applies cleanly via migrate Lambda|users.email unique case-insensitively|invitations has expires_at and status, with a partial unique index on email where status is pending|Default Organization row created idempotently|Default invitation validity documented in the runbook",
+  1.5,"S0-10","FR-AUTH-02,FR-AUTH-03","US-46","backend,db,adr-0010","Highest")
+t("S1-17","Task","Read-only database role for the pre-sign-up trigger",
+  "Extend the S0-08 role bootstrap with a third IAM role, presignup_ro, that may only SELECT the invitations and users tables. The bootstrap runs in the data stack before migrations, so its ALTER DEFAULT PRIVILEGES lands before S1-04 creates the tables. Scope rds-db:connect to that database user only, following the pattern in lib/app/api.ts.",
+  "Bootstrap is still idempotent when re-run|presignup_ro cannot INSERT, UPDATE or DELETE (negative test)|Default privileges are granted before S1-04 tables exist, verified by applying both in order|rds-db:connect names the one database user, no wildcard",
+  1,"S0-08","NFR-SEC-01,NFR-SEC-04","US-39","infra,backend,db,adr-0001","Highest")
+t("S1-01","Story","Cognito user pool, Google IdP, app client, hosted UI, secrets and token settings",
+  "CDK auth construct in the data stack (ADR-0009, the pool is stateful): user pool with self sign-up disabled, groups admin and supervisor, Google identity provider with attribute mapping, client secret from Secrets Manager (owner creates the Google OAuth client), app client with code plus PKCE and token revocation enabled, hosted UI domain, and callback and logout URLs read from EnvConfig rather than from a CloudFront stack reference, which would make the Web and App stacks circular. Dev config also gets the test-only app client ADR-0011 defines.",
+  "Pool lives in the data stack with a retain policy in prod, and the runbook says how to re-bind cognito_sub if a pool is ever replaced|Google attribute mapping covers email, email_verified, given_name and family_name, and email is the pool alias attribute|Google OAuth client id and secret come from Secrets Manager per environment, not committed, and the authorized redirect URI is the hosted UI oauth2/idpresponse URL|Callback and logout URLs come from EnvConfig; dev uses the live CloudFront domain and prod carries documented synth-valid placeholders until M3|Access and ID token validity 60 minutes, refresh token 7 days, token revocation enabled (SEC-04)|Cognito feature plan and hosted UI flavour chosen and recorded, with the monthly cost noted against NFR-COST-01|Self sign-up disabled",
+  2,"S0-15,S1-02","FR-AUTH-01,NFR-SEC-04","US-01","infra,auth,adr-0009","Highest")
+t("S1-18","Spike","Spike proof: federated binding and trigger latency measured on dev",
+  "Second half of the spike, once the pool exists. Prove on dev what ADR-0007 and ADR-0008 assume: that a first federated sign-in produces exactly one Cognito identity for an invited email, that a second sign-in reuses it, and that the pre-sign-up trigger answers inside Cognito's 5 second budget on a cold start.",
+  "First sign-in creates one Cognito user and binds one cognito_sub; a second sign-in reuses both|Measured cold-start and warm pre-sign-up duration recorded, with the p99 against the 5 second ceiling|Findings appended to ADR-0007 and ADR-0008, including whether provisioned concurrency is needed",
+  0.5,"S1-01,S1-03","FR-AUTH-01,FR-AUTH-03","US-01","spike,auth,adr-0007","Highest")
+t("S1-03","Story","PreSignUp Lambda enforcing the invitation allowlist",
+  "VPC Lambda trigger connecting as presignup_ro with RDS IAM auth; rejects emails with no pending unexpired invitation, and emails belonging to deactivated users; covers federated Google sign-ins. Cognito's synchronous trigger timeout is a fixed 5 seconds and the backend's own IAM connect timeout is 12 seconds (internal/db/pool.go), so this ticket must prove the latency, not assume it: keep the connect timeout under the ceiling, size provisioned concurrency per ADR-0007, and fail closed with a stable error code. Adding the function also means adding presignup to BACKEND_LAMBDAS and BackendLambda in the infra repo, which only works after the backend binary is in a released build.",
+  "Uninvited Google email is rejected with a stable error code|Invited email with a pending unexpired invitation passes|Expired or already-accepted invitation is rejected|Email of a deactivated user is rejected, and the ticket records that this only covers accounts that have never signed up (a returning account is stopped by the API, see S1-06)|Trigger p99 duration on a cold start is under 5 seconds, measured not assumed|Lambda has no internet, and no write rights on any table|Backend binary released before the infra PR that adds presignup to BACKEND_LAMBDAS",
+  1.5,"S1-01,S1-04,S1-17","FR-AUTH-01,FR-AUTH-05","US-02","backend,auth,db,adr-0007","Highest")
+t("S1-14","Task","API Gateway JWT authorizer with a public /healthz route",
+  "S0 built one route, ANY /api/v1/{proxy+} (lib/app/api.ts), and API Gateway attaches authorizers per route, so protecting the API as it stands also protects /healthz. SEC-03 and the spec's security: [] on /healthz both require the exemption. Split /healthz onto its own unauthenticated route, attach the Cognito JWT authorizer to the proxy route with issuer and audience from the pool, and keep the release gates working: scripts/smoke.sh and the frontend Playwright spec both call /api/v1/healthz and an unknown API path without a token.",
+  "GET /api/v1/healthz is reachable without a token and still returns the Go handler's JSON with security headers|Every other route requires a valid Cognito token, with issuer and audience checked|scripts/smoke.sh passes unchanged against dev|The unknown-API-path gate is updated to assert 401 without a token and problem+json 404 with one|A synth test asserts exactly one unauthenticated route exists|The smoke script gains one authenticated request against a protected route, using the ADR-0011 dev credentials, so the gate proves the authorizer works",
+  1,"S1-01","FR-AUTH-04,NFR-SEC-04","US-01,US-42","infra,backend,auth,security","Highest")
+t("S1-15","Task","Authorizer claims through the Lambda adapter",
+  "internal/apigw.toHTTPRequest copies path, method, query, body, headers and cookies and drops event.RequestContext.Authorizer, so the middleware has no validated claims to read. Parsing the bearer token in the handler is not an option: validating it needs Cognito's JWKS and the API Lambda has no internet (no NAT), and trusting unvalidated claims would be an auth bypass. Carry the authorizer's JWT claims into the request context instead.",
+  "Claims reach the handler only through the authorizer context, never from the Authorization header|A request with no authorizer context is refused with 401 and logs no token material (SEC-50)|The local HTTP development path cannot supply claims when running on Lambda, asserted by a test|Adapter unit tests cover a claims-present and a claims-absent event",
+  0.5,"S0-03","FR-AUTH-04,NFR-SEC-02","US-01","backend,auth,security","Highest")
+t("S1-05","Task","OpenAPI: /me and the shared Problem responses",
+  "Spec GET /me (id, name, email, roles, organization) and the shared 401, 403 and 404 problem responses; regenerate the server interface. The bearer security scheme already exists from S0-04, so this ticket only narrows its description to the token ADR-0008 chose. It also documents the one response the API does not control: API Gateway's own 401 is application/json {message}, not problem+json, because HTTP APIs cannot customise gateway responses.",
+  "Spectral clean|The security scheme names the token type the SPA actually sends|The 401 description says the authorizer's own 401 is not problem+json|Examples contain only fictional data|Frontend drift gate passes in the same release, see S1-19",
+  1,"S0-19","FR-AUTH-04","US-01","api,adr-0006","High")
+t("S1-19","Task","Frontend spec sync and /me handler, released with S1-05",
+  "The drift gate compares the pinned spec to the backend spec byte for byte (scripts/api-drift.mjs) in the build stage, and the MSW coverage test requires one handler per spec path, so a backend spec change on its own turns the pipeline red for all three repos. This ticket carries the frontend half of S1-05 and must reach main in the same release.",
+  "npm run api:sync updates the pinned copy and records the backend SHA|An MSW handler exists for /me and the handlers-coverage test passes|npm run api:drift is green against the backend commit being released|Merged in the same pipeline run as S1-05, or immediately after it with no release in between",
+  0.5,"S1-05","NFR-DOC-01","US-01","frontend,api,adr-0006","Highest")
 t("S1-06","Story","Auth middleware: claims to actor, user lookup, sub binding, deactivated check",
-  "Resolve the actor from JWT claims, load the user by email/sub, bind cognito_sub on first sign-in inside a transaction, refuse deactivated users, re-verify roles against the users row.",
-  "First sign-in binds sub once (concurrent first requests do not duplicate)|Deactivated user gets 403 even with a valid token|Role in token but not in DB is ignored",
-  2,"S1-04,S1-05,S0-09","FR-AUTH-03,FR-AUTH-04,FR-AUTH-05","US-01,US-02","backend,auth,security","Highest")
+  "Wire the pgx pool into cmd/api, which has no database today, then resolve the actor from the validated claims in the authorizer context: look the user up by the claim ADR-0008 chose, bind cognito_sub on first sign-in inside one transaction, provision the users row from a pending invitation on first sign-in and stamp invitations.accepted_at (ADR-0010), refuse deactivated users, and take roles from the users row only. Group claims are advisory in S1 because nothing assigns Cognito groups until S5-05, and the seeded first admin has no Cognito user at all until they first sign in.",
+  "First sign-in binds sub once; concurrent first requests do not duplicate, enforced by the unique index and ON CONFLICT rather than read-then-write|First sign-in of an invited user creates the users row and stamps the invitation accepted|Deactivated user gets 403 even with a valid token|Roles come from the users row; a role present only in the token is ignored|Pool stays at 2 connections per instance so the reserved-concurrency maths in config/types.ts still holds",
+  2,"S1-04,S1-05,S1-14,S1-15,S0-09","FR-AUTH-03,FR-AUTH-04,FR-AUTH-05","US-01,US-02","backend,auth,security,adr-0010","Highest")
 t("S1-07","Story","internal/authz policy framework",
   "Central policy package: Actor type, role predicates, relationship checks interface (same org, supervisor-of), helper that handlers must call; lint/test that handlers reference authz.",
-  "Table-driven unit tests for policy functions|Handler template demonstrates usage|Documented contract for later slices",
+  "Table-driven unit tests for policy functions|Handler template demonstrates usage|Role predicates read the database-backed actor, not token claims|Documented contract for later slices",
   1.5,"S1-06","NFR-SEC-02,FR-AUTH-04","US-44","backend,security","Highest")
 t("S1-08","Story","GET /me endpoint",
   "Returns the current user's profile, roles and organization via a dedicated DTO.",
-  "Returns 200 for active user|401 without token|DTO contains explicit fields only",
+  "Returns 200 for active user|401 without token|403 with a stable problem type when the token is valid but the account is not usable, which is what the access-denied page renders|DTO contains explicit fields only",
   1,"S1-06,S1-07","FR-AUTH-04","US-01","backend,api","High")
-t("S1-09","Task","Seed script: first admin and Default Organization",
-  "scripts/seed-first-admin: idempotent invocation of a seed Lambda/CLI that creates the invitation, user row (Admin) and organization; also supports adding test invitations in dev only.",
-  "Running twice changes nothing|Prod seeding requires an explicit flag|Dev helper cannot run against prod",
-  1,"S1-04,S1-01","FR-AUTH-02","US-46","infra,scripts","Highest")
+t("S1-09","Task","Seed Lambda: first admin, Default Organization and dev test users",
+  "There is no direct database access in any environment (no bastion, by budget), so seeding is a VPC Lambda invoked by a thin script, following ADR-0003's pattern for migrate. It idempotently creates the Default Organization, the first admin's invitation and users row, and in dev only the invitations and users rows for the test accounts ADR-0011 needs. The Cognito half of those test accounts cannot live here, because Cognito admin APIs are unreachable from the VPC (CLAUDE.md §4.1): a non-VPC pipeline step creates them. Adding the function means adding it to BACKEND_LAMBDAS and BackendLambda after the backend binary is in a released build.",
+  "Running twice changes nothing|Creates the admin users row, not only the invitation, so the first sign-in has a row to bind to|Dev-only test invitations and rows are impossible to create against prod, and the non-VPC step that creates their Cognito users runs on the dev stage only|Prod seeding requires an explicit flag|Backend binary released before the infra PR that adds the function|Where it runs is decided and documented: a pipeline step after migrate, or a one-time owner invocation",
+  1,"S1-04,S1-01","FR-AUTH-02","US-46","infra,backend,scripts,adr-0011","Highest")
+t("S1-20","Task","Break-glass admin recovery runbook entry",
+  "Sign-in is Google only and SEC-07 forbids a backdoor, so if the single admin's Google account becomes unreachable there is no documented way back in. Record the procedure and make the seed Lambda support it.",
+  "Runbook section says exactly how to add a second admin by invoking the seed Lambda, with the explicit prod flag|The seed Lambda accepts an additional admin email|A second admin address is seeded, or the owner records the decision not to",
+  0.5,"S1-09","FR-AUTH-02,NFR-DOC-01","US-46","infra,docs,scripts","High")
+t("S1-16","Task","CSP connect-src for the Cognito hosted UI domain",
+  "lib/app/web.ts sets connect-src 'self' and says in a comment that S1 adds the Cognito domain. The hosted UI redirect is a top-level navigation and is unaffected, but the PKCE code-for-token POST goes to the hosted UI origin and is blocked by the current policy, silently in the browser, while every header check stays green.",
+  "The CloudFront response headers policy includes the hosted UI origin in connect-src|The local development server in e2e serves the same policy|The Playwright header assertion requires connect-src to contain that origin|No 'unsafe-inline' or 'unsafe-eval' is added (SEC-32)",
+  0.5,"S1-01","NFR-SEC-05,FR-AUTH-06","US-01","infra,frontend,security,adr-0004","Highest")
 t("S1-10","Story","Frontend auth: Cognito hosted UI (code + PKCE), AuthProvider, route guards",
-  "Redirect flow, token handling in memory with refresh, AuthProvider/useAuth, protected routes, 401 handling in the API client.",
-  "Sign-in and sign-out work end to end on dev|Tokens are not stored in localStorage|Expired session redirects to sign-in",
-  2,"S1-01,S1-08,S0-19","FR-AUTH-01,FR-AUTH-06","US-01","frontend,auth","Highest")
+  "Redirect flow, tokens in memory with refresh, AuthProvider and useAuth, protected routes, 401 handling in the API client. Two details the plan review added: sign-out must hit the hosted UI logout endpoint and revoke the refresh token (SEC-04), and the callback route must handle Cognito's error and error_description parameters, which is how a pre-sign-up rejection comes back to the SPA.",
+  "Sign-in and sign-out work end to end on dev, and sign-out revokes the refresh token|Tokens are in memory only, not in localStorage or sessionStorage|Page-reload behaviour matches the ADR-0008 decision and is covered by a test|A callback carrying error and error_description routes to the access-denied page|A 401 whose body is not problem+json still redirects cleanly to sign-in|Expired session redirects to sign-in",
+  2,"S1-01,S1-08,S1-16,S0-19","FR-AUTH-01,FR-AUTH-06","US-01","frontend,auth","Highest")
 t("S1-11","Story","App shell: header, role-aware nav, landing and access-denied pages",
   "Header with title/kicker per prototype, user name menu, nav items by role, signed-out landing, 'Access has not been granted' page for rejected sign-ins.",
-  "Nav shows only permitted items|Access-denied page text matches US-02|axe has no serious violations",
+  "Nav shows only permitted items|Access-denied page text matches US-02|The page renders both a pre-sign-up rejection from the callback and a 403 from /me|axe has no serious violations",
   1.5,"S1-10","FR-AUTH-06","US-01,US-02","frontend,ux","High")
-t("S1-12","Task","Group claims to role mirror: consistency and token refresh tests",
-  "Verify cognito:groups claims versus users.is_admin/is_supervisor handling, including stale tokens after demotion (DB wins).",
-  "Demoted admin with a still-valid token is refused on admin checks|Test documents behavior|Runbook note added",
+t("S1-12","Task","Role authority and token staleness: tests and runbook note",
+  "Verify that the users row decides admin and supervisor, and that cognito:groups claims cannot grant anything in S1, including stale tokens after a demotion. Record what is deferred: Cognito-side group assignment and global sign-out arrive with S5-05, so until then revocation is enforced by the database check on the next request.",
+  "Demoted admin with a still-valid token is refused on admin checks|A token carrying the admin group for a user who is not an admin in the database grants nothing|Test documents the behaviour|Runbook note says revocation is database-enforced until S5-05",
   1,"S1-06","FR-AUTH-04","US-44","backend,security","High")
 t("S1-13","Task","E2E: invited sign-in and denied sign-in",
-  "Playwright against dev using the test-user strategy from S1-02: invited user lands in app with name shown; uninvited user sees the access-denied page; sign-out.",
-  "Both paths pass in the dev smoke stage|No real credentials committed",
-  2,"S1-11,S1-09,S1-03","FR-AUTH-01,FR-AUTH-06","US-01,US-02","e2e","High")
+  "Playwright against dev using the token strategy ADR-0011 settles: an invited user lands in the app with their name shown, an uninvited user sees the access-denied page, and sign-out works. Automating Google's consent screen is not reliable, so this ticket implements whichever route the ADR chose and, if that route is a recorded manual demo, it instead automates everything that does not need a Google identity.",
+  "Both paths pass in the dev smoke stage, or the ADR-0011 fallback is implemented and the manual demo is recorded|No real credentials committed; test credentials come from Secrets Manager or SSM|The suite does not drive accounts.google.com",
+  2,"S1-11,S1-09,S1-03","FR-AUTH-01,FR-AUTH-06","US-01,US-02","e2e,adr-0011","High")
 
 # ---------------- S2 Log hours ----------------
 t("S2-01","Story","Migration: categories, clients, entries, entry_clients with DB constraints",

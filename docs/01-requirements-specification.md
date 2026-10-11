@@ -47,12 +47,12 @@ Roles are **cumulative**: Supervisor and Admin are added on top of User. One acc
 
 | ID | Requirement | Pri | Status |
 |---|---|---|---|
-| FR-AUTH-01 | Users sign in with Google through Cognito. Sign-up is **invite-only**: Cognito self sign-up is disabled and a PreSignUp trigger rejects any email not on the `invitations` allowlist (covers federated sign-ins). | Must | Decided |
+| FR-AUTH-01 | Users sign in with Google through Cognito. Sign-up is **invite-only**: Cognito self sign-up is disabled and a PreSignUp trigger rejects any email without a **pending, unexpired** invitation (covers federated sign-ins). The trigger must answer inside Cognito's fixed 5-second budget (ADR-0007). | Must | Decided |
 | FR-AUTH-02 | The first admin (`malcolmj0415@gmail.com`) and the "Default Organization" are seeded at deploy by a script. | Must | Decided / Default |
-| FR-AUTH-03 | On first sign-in the Cognito identity is bound to the existing `users` row (`cognito_sub`). Data is keyed by internal `user_id`, never by email or `sub`. | Must | Decided |
-| FR-AUTH-04 | The API derives roles from Cognito group claims (`admin`, `supervisor`) and re-verifies them against the `users` row on each request. | Must | Decided |
-| FR-AUTH-05 | Deactivated users cannot sign in and cannot use an existing token for data access. | Must | Decided |
-| FR-AUTH-06 | The SPA shows a signed-out landing page, handles the Cognito hosted-UI redirect, sign-out, and an "access not granted" message when the invite check fails. | Must | Default |
+| FR-AUTH-03 | On first sign-in the Cognito identity is bound to the `users` row (`cognito_sub`), matched on the ID token's `email` claim; where no row exists yet the row is created from the pending invitation in the same transaction, which also stamps the invitation accepted (ADR-0008, ADR-0010). Data is keyed by internal `user_id`, never by email or `sub`. | Must | Decided |
+| FR-AUTH-04 | The API takes roles from the `users` row on each request. Cognito group claims (`admin`, `supervisor`) are advisory and grant nothing on their own, because no group is assigned until S5-05 (ADR-0008). Claims are read only from the API Gateway authorizer context. | Must | Decided |
+| FR-AUTH-05 | Deactivated users cannot sign in and cannot use an existing token for data access. In S1 this is enforced by the API's status check on every request, and by the PreSignUp trigger for accounts that have never signed up; disabling the Cognito user and global sign-out arrive with S5-05. | Must | Decided |
+| FR-AUTH-06 | The SPA shows a signed-out landing page, handles the Cognito hosted-UI redirect (including a callback carrying `error`/`error_description` from a refused sign-up), sign-out (hosted-UI logout plus refresh-token revocation), and an "access not granted" message when the invite check fails or `/me` returns 403. | Must | Default |
 
 ### 4.2 Logging hours (Slice S2)
 
@@ -207,14 +207,19 @@ Roles are **cumulative**: Supervisor and Admin are added on top of User. One acc
 | OQ-01 | Cognito Google-only, or also allow email/password? Account linking between native and federated users is complex. | Google-only (simplest) | **Decided 2026-10-10: Google sign-in only.** S1-02 spike no longer needs to evaluate email/password. |
 | OQ-02 | Should a supervisor with pending-only supervisees see zero-progress cards? | Show with zeros | **Decided 2026-10-10** |
 | OQ-03 | Data retention after permanent delete (backups hold data up to 7 days in prod). | Accept | **Decided 2026-10-10: accept 7-day backup window** |
+| OQ-04 | Which token does the SPA send, and where may the API read claims from? | ID token; claims only from the authorizer context | **Proposed 2026-10-11 (ADR-0008)** — access tokens carry no `email`, so first-sign-in binding is impossible with them |
+| OQ-05 | How does the pre-sign-up trigger stay inside Cognito's fixed 5-second timeout? | Keep it in the VPC with provisioned concurrency; DynamoDB projection is the fallback | **Decided 2026-10-11 (ADR-0007): keep it in the VPC with provisioned concurrency; owner approved the $1–3/month** |
+| OQ-06 | Where does the Cognito user pool live, and where do callback URLs come from? | Data stack; URLs from `EnvConfig` | **Proposed 2026-10-11 (ADR-0009)** — a CloudFront reference would make the stacks circular |
+| OQ-07 | Do invitations expire, and what closes their lifecycle? | 14-day `expires_at`, `status`, acceptance stamped on first sign-in | **Proposed 2026-10-11 (ADR-0010)** |
+| OQ-08 | How do automated tests obtain a token without driving Google's consent screen? | Dev-only password app client with synthetic users | **Proposed 2026-10-11 (ADR-0011)** — an explicit, dev-only deviation from SEC-01 |
 
 ## 8. Constraints and dependencies
 
 - AWS region **us-west-2**; one account with `dev` and `prod`.
 - GitHub owner `malcolmjefferson`; three public repos (made public 2026-10-10) (`therapy_service_hours_frontend`, `_backend`, `_infra`). **The owner creates these** and connects CodeConnections (a console click).
-- A Google OAuth client must be created by the owner; its secret is stored in Secrets Manager (ticket S1-01).
-- Recommended designs that need an **Accepted** ADR before building: ADR-0001 to ADR-0006.
+- A Google OAuth client must be created by the owner **per environment** (the authorized redirect URI is per client and points at one pool's hosted-UI `/oauth2/idpresponse`); each secret is stored in Secrets Manager (ticket S1-01). Prod's client is part of the M3 checklist, and prod config carries synth-valid placeholders until then.
+- Recommended designs that need an **Accepted** ADR before building: ADR-0001 to ADR-0006 (accepted 2026-10-10), ADR-0007 (accepted 2026-10-11) and **ADR-0008 to ADR-0011**, which S1-02 must get accepted before S1-01 starts.
 
 ## 9. Acceptance of this document
 
-Accepted when the owner confirms the Section 7 defaults (or changes them) and approves ADR-0001 to ADR-0006. See `05-execution-plan.md` for the gate schedule.
+Accepted when the owner confirms the Section 7 defaults (or changes them) and approves ADR-0001 to ADR-0006; ADR-0007 is accepted (OQ-05), and ADR-0008 to ADR-0011 (OQ-04, OQ-06 to OQ-08) are awaiting the same approval. See `05-execution-plan.md` for the gate schedule.

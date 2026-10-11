@@ -1,13 +1,13 @@
 # Jira ticket drafts
 
-**146 tickets** in **12 epics** (one per vertical slice). Every ticket is **2 days or less**, has acceptance criteria, a Definition of Done, dependencies, and links to requirements and stories.
+**153 tickets** in **12 epics** (one per vertical slice). Every ticket is **2 days or less**, has acceptance criteria, a Definition of Done, dependencies, and links to requirements and stories.
 
 ## Files
 
 | File | Contents |
 |---|---|
 | [S0-walking-skeleton.md](S0-walking-skeleton.md) | Pipeline, infra, health page (21 tickets) |
-| [S1-secure-sign-in.md](S1-secure-sign-in.md) | Cognito + Google, invites, authz framework (13) |
+| [S1-secure-sign-in.md](S1-secure-sign-in.md) | Cognito + Google, invites, authz framework (20) |
 | [S2-log-hours.md](S2-log-hours.md) | Entries, clients, table (17) |
 | [S3-goals-and-progress.md](S3-goals-and-progress.md) | Goal cards and progress (7) |
 | [S4-import-and-export.md](S4-import-and-export.md) | Markdown import, MD/CSV/PDF export (11) |
@@ -50,7 +50,7 @@ Plus the standing rules: bound parameters only, authz through `internal/authz`, 
 | Slice | Tickets | Dev-days |
 |---|--:|--:|
 | S0 Walking skeleton | 21 | 32 |
-| S1 Secure sign-in | 13 | 19 |
+| S1 Secure sign-in | 20 | 23.5 |
 | S2 Log hours | 17 | 29 |
 | S3 Goals and progress | 7 | 10.5 |
 | S4 Import and export | 11 | 17 |
@@ -61,7 +61,7 @@ Plus the standing rules: bound parameters only, authz through `internal/authz`, 
 | S9 Milestone celebrations | 6 | 9 |
 | S10 Team schedules | 8 | 13 |
 | S11 Hardening and go-live | 13 | 20.5 |
-| **Total** | **146** | **235** |
+| **Total** | **153** | **239.5** |
 
 Type mix: 94 Stories, 51 Tasks, 1 Spike. Priority mix: 39 Highest, 91 High, 16 Medium.
 
