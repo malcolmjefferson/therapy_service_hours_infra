@@ -76,6 +76,12 @@ A hosted web app for therapy trainees to log service hours against licensure goa
 | DB migrations in pipeline | Dedicated **migration Lambda** inside the VPC (goose, embedded migrations, advisory lock), **invoked by a non-VPC CodeBuild step** before each app deploy; prod snapshot first | Accepted (ADR-0003) |
 | API routing | CloudFront behavior `/api/*` routed to API Gateway so the SPA and API share one origin (no CORS). SPA routing via a **CloudFront Function** rewrite on the S3 behavior only (no distribution-wide error responses) | Accepted (ADR-0004) |
 | Pipeline layout | **One CDK Pipelines pipeline owned by the infra repo** with all three repos as sources, queued execution mode, same artifacts promoted dev to prod | Accepted (ADR-0005) |
+| API credential | **ID token** as the bearer credential (access tokens carry no `email`, so first-sign-in binding needs the ID token); claims read **only** from the API Gateway authorizer context | Proposed (ADR-0008) |
+| Route protection | Cognito JWT authorizer on `ANY /api/v1/{proxy+}`, with `GET /api/v1/healthz` on its own **unauthenticated** route (authorizers are per route) | Proposed (ADR-0008) |
+| Pre-sign-up allowlist | VPC trigger reading `invitations` as a read-only role, with **provisioned concurrency** so it answers inside Cognito's fixed 5-second trigger timeout (about $1–3/month, approved 2026-10-11) | Accepted (ADR-0007) |
+| Cognito pool placement | User pool, groups, IdP and app clients in the **data stack** (stateful, retained in prod); callback and logout URLs from `EnvConfig`, never a CloudFront stack reference | Proposed (ADR-0009) |
+| Invitation lifecycle | `invitations` gains `expires_at` (14-day default) and `status`; first sign-in provisions the `users` row from a pending invitation and stamps acceptance | Proposed (ADR-0010) |
+| Sign-in tests | A **dev-only** password app client plus synthetic test users for Playwright and the authenticated smoke check; the Google path is demonstrated manually | Proposed (ADR-0011) |
 | API contract tooling | `api/openapi.yaml` is the source of truth; backend **oapi-codegen** (strict chi server); frontend **openapi-typescript** + **openapi-fetch** with a pinned spec copy and a CI drift gate; `spectral` lint and `oasdiff` breaking-change check | Accepted (ADR-0006) |
 
 ---
@@ -139,12 +145,12 @@ The frontend generates types from a **pinned copy** of the backend's `api/openap
 
 ```
 Users ─► CloudFront ─► S3 (React SPA, private bucket via OAC)
-        └─ /api/* ─► API Gateway HTTP API (Cognito JWT authorizer)
+        └─ /api/* ─► API Gateway HTTP API (Cognito JWT authorizer; /healthz public)
                        ├─► Lambda "api" (Go, private subnets) ─► RDS PostgreSQL
                        └─► Lambda "admin-orchestrator" (no VPC) ─► Step Functions Express (admin actions)
                               ├─► Lambda "identity" (no VPC) ─► Cognito admin APIs
                               └─► Lambda "api"/data step (VPC) ─► RDS
-Cognito user pool (Google IdP, invite-only, groups: admin, supervisor)
+Cognito user pool (Google IdP, invite-only, groups: admin, supervisor) — in the data stack (ADR-0009)
 
 GitHub (3 repos) ─► CodePipeline (infra repo) ─► CodeBuild (lint, test, build)
    ─► Deploy DEV: data stack ─► Migrate DEV ─► app stack ─► frontend sync ─► Smoke test
@@ -160,6 +166,7 @@ GitHub (3 repos) ─► CodePipeline (infra repo) ─► CodeBuild (lint, test, 
 | No RDS Proxy (about $15/mo) | Small pgx connection pool; **reserved concurrency cap** on the API Lambda to protect the DB connection limit. |
 | Cognito admin APIs unreachable from the VPC | admin-orchestrator and identity Lambdas outside the VPC; Step Functions coordinates them with the VPC data step (ADR-0002). |
 | CodeBuild cannot reach a private DB | A non-VPC CodeBuild step invokes the migration Lambda synchronously (ADR-0003). |
+| Cognito's synchronous trigger timeout is a fixed **5 s**, and a cold VPC Lambda's first IAM-authenticated connection is known to take longer (`internal/db/pool.go` sets 12 s) | The pre-sign-up trigger gets **provisioned concurrency** (about $1–3/month), the one place where a cold start is a user-visible failure (ADR-0007). |
 
 **Estimated cost:** about **$35–45/month** (two RDS instances about $28; the rest mostly within free tiers). Verify with the AWS Pricing Calculator. Optional saving: scheduled stop of the dev database.
 
@@ -340,7 +347,7 @@ Primary keys are UUIDs. All timestamps are `timestamptz` except session times (l
 |---|---|
 | `organizations` | `id`, `name` (unique), `created_at` |
 | `users` | `id`, `organization_id` (NOT NULL), `email` (citext, unique), `first_name`, `last_name`, `status` (`active`/`deactivated`), `cognito_sub` (nullable, unique), role mirror (`is_supervisor`, `is_admin`), `created_at`, `deactivated_at` |
-| `invitations` | `id`, `email` (unique), `organization_id`, `roles`, `invited_by`, `created_at`, `accepted_at` |
+| `invitations` | `id`, `email` (citext), `organization_id`, `roles`, `invited_by`, `created_at`, `expires_at`, `status` (`pending`/`accepted`/`revoked`), `accepted_at`; partial unique index on `email` where `status = 'pending'` (ADR-0010) |
 | `categories` | `id`, `name`, `group` (`direct`/`indirect`/`supervision`), `sort_order` |
 | `goals` | `id`, `user_id`, `goal_type`, `target_hours`, `last_celebrated_percent`; unique `(user_id, goal_type)` |
 | `clients` | `id`, `user_id`, `name`; unique `(user_id, lower(name))` |
@@ -354,6 +361,7 @@ Primary keys are UUIDs. All timestamps are `timestamptz` except session times (l
 **Constraints (enforce in the DB, not only in code)**
 - `entries`: `end_time > start_time`; start and end both null or both set; `duration_minutes` consistent with times when present; minutes divisible by 15; **overlap exclusion** per user (via `btree_gist`) for non-rejected entries with times.
 - `supervision_links`: partial unique index on `(supervisee_id)` where status is `pending` or `accepted`; `supervisor_id <> supervisee_id`; validation that supervisee and supervisor share the link's `organization_id` (trigger or equivalent).
+- `invitations`: at most one `pending` invitation per email (partial unique index), so a re-invite after a delete or an email change does not collide; `expires_at` is checked by the pre-sign-up trigger, and **first sign-in** sets `status = 'accepted'` with `accepted_at` in the same transaction that binds `cognito_sub` (ADR-0010).
 - Indexes for the schedule path: `(user_id, session_date, start_time)`.
 - Keep approved-entry immutability enforced in the service layer with a DB-level backstop.
 
@@ -361,7 +369,7 @@ Primary keys are UUIDs. All timestamps are `timestamptz` except session times (l
 
 ## 10. API
 
-Base path `/api/v1`. JSON. Errors use RFC 7807 `application/problem+json`. List endpoints are paginated (default 50). `Idempotency-Key` header supported on POSTs that create or bulk-change data. The OpenAPI file is the contract.
+Base path `/api/v1`. The bearer credential is the Cognito **ID token**, validated by the API Gateway JWT authorizer on every route except `GET /healthz`, which has its own unauthenticated route (ADR-0008). The authorizer's own rejection is `application/json {"message":"Unauthorized"}`, not `problem+json`: HTTP APIs cannot customise gateway responses, and clients must tolerate it. JSON. Errors use RFC 7807 `application/problem+json`. List endpoints are paginated (default 50). `Idempotency-Key` header supported on POSTs that create or bulk-change data. The OpenAPI file is the contract.
 
 | Area | Endpoints (illustrative) | Roles |
 |---|---|---|
@@ -397,7 +405,8 @@ Observability: `/healthz`, structured JSON logs (`slog`) with request IDs, Cloud
 - **One central policy package** (`internal/authz`) used by every handler. Handlers do not hand-roll permission checks.
 - Every query is scoped by the acting user's organization and relationship.
 - Guard against IDOR: every `{userId}` or `{entryId}` path parameter is checked against the actor's rights.
-- Roles come from Cognito group claims; supervisor and admin checks are re-verified server-side.
+- Claims are read **only** from the API Gateway authorizer context, never parsed from the `Authorization` header (the API Lambda has no internet, so it cannot fetch JWKS to validate a token itself). A request with no authorizer context is refused with 401 (ADR-0008).
+- Roles come from the `users` row. Cognito group claims are advisory only until S5-05 assigns groups: the seeded first admin has no Cognito user until their first sign-in, so a claim can never be required for a privileged check.
 - **Required negative tests:** cross-organization requests, cross-organization supervisor lookup, viewing a non-peer's schedule, supervisor acting on a non-supervisee, non-admin calling admin routes, admin reading entries without a link.
 
 ### 11.3 Data exposure
@@ -488,6 +497,7 @@ Migrations are **forward-only**, additive-first, and must be safe to run before 
 | Go integration | **Testcontainers PostgreSQL** (not in-memory DBs); migrations applied for real; authz negative tests; injection tests |
 | API contract | OpenAPI validation in CI |
 | Frontend unit and integration | React Testing Library focused on user behavior; **MSW** to mock the API |
+| Sign-in tests | Playwright and the authenticated smoke check sign in through a **dev-only password app client** with synthetic users (ADR-0011); nothing drives Google's consent screen, and the federated path is demonstrated manually per slice |
 | E2E (Playwright) | Critical paths: invited sign-in; log an entry; request a supervisor; accept; approve, reject, and revert; peer schedule; admin invite and role change; import of the prototype `.md` |
 | Visual / accessibility | axe checks on key pages; watch the schedule grid and progress bars |
 

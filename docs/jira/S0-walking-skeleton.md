@@ -122,7 +122,7 @@ Owner accepted ADR-0001 to ADR-0006 and confirmed ASM-01..ASM-07 and OQ-02/OQ-03
 | Requirements | NFR-OPS-01, NFR-SEC-05 |
 | Stories | US-42 |
 | Is blocked by | S0-01 |
-| Blocks | S0-04, S0-09, S0-11, S0-17 |
+| Blocks | S0-04, S0-09, S0-11, S0-17, S1-15 |
 
 **Description**
 
@@ -290,7 +290,7 @@ VPC with private-isolated subnets in two AZs and an S3 gateway endpoint (no NAT)
 | Requirements | NFR-SEC-01, NFR-SEC-04 |
 | Stories | US-39 |
 | Is blocked by | S0-07 |
-| Blocks | S0-10 |
+| Blocks | S0-10, S1-17 |
 
 **Description**
 

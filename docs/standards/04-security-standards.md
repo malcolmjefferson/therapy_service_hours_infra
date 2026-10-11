@@ -61,12 +61,14 @@ flowchart LR
 | ID | Rule |
 |---|---|
 | SEC-01 | **MUST:** sign-in is **Google only** through the Cognito hosted UI with authorization code + PKCE (OQ-01, decided 2026-10-10). No passwords are stored or handled by the app. |
-| SEC-02 | **MUST:** sign-up is **invite only**. Cognito self sign-up is disabled, and the **pre-sign-up Lambda** rejects any email not in `invitations` (this covers federated first sign-ins). |
-| SEC-03 | **MUST:** API Gateway's Cognito **JWT authorizer** protects every route except `/healthz`. It validates issuer, audience/client ID, expiry and signature. |
-| SEC-04 | **MUST:** **Default** token lifetimes: access and ID tokens 60 minutes, refresh token 7 days. Sign-out revokes the refresh token. |
-| SEC-05 | **MUST:** deactivating a user disables the Cognito user, signs them out globally, and makes the API reject them on the next request through the DB status check, even with a still-valid token. |
+| SEC-02 | **MUST:** sign-up is **invite only**. Cognito self sign-up is disabled, and the **pre-sign-up Lambda** rejects any email without a **pending, unexpired** invitation, and any email belonging to a deactivated user (this covers federated first sign-ins). It fails **closed** with a stable error code, and must answer inside Cognito's fixed 5-second trigger timeout (ADR-0007). |
+| SEC-03 | **MUST:** API Gateway's Cognito **JWT authorizer** protects every route except `/healthz`. Authorizers are attached **per route**, so `GET /api/v1/healthz` has its own unauthenticated route and everything else sits behind the authorized proxy route; a synth test asserts exactly one unauthenticated route exists (ADR-0008). It validates issuer, audience/client ID, expiry and signature. Its own rejection is `application/json {message}`, not `problem+json`, and clients must tolerate that. |
+| SEC-04 | **MUST:** **Default** token lifetimes: access and ID tokens 60 minutes, refresh token 7 days. **Token revocation is enabled on the app client**, and sign-out calls the hosted-UI logout endpoint **and** revokes the refresh token. The bearer credential is the **ID token** (ADR-0008). |
+| SEC-05 | **MUST:** deactivating a user disables the Cognito user, signs them out globally, and makes the API reject them on the next request through the DB status check, even with a still-valid token. The Cognito half needs the identity Lambda and arrives with **S5-05**; until then revocation is database-enforced on the next request, and the runbook says so. |
 | SEC-06 | **MUST:** an email change ends access for the old email immediately and requires a re-invite (CLAUDE.md §5.1). |
-| SEC-07 | **MUST:** the first admin is seeded at deploy time from config (`malcolmj0415@gmail.com`). No backdoor or default credentials exist. |
+| SEC-07 | **MUST:** the first admin is seeded at deploy time from config (`malcolmj0415@gmail.com`) — the invitation **and** the `users` row, so the first sign-in binds rather than fails. No backdoor or default credentials exist. Because there is no password path, the runbook carries a **break-glass** procedure for adding a second admin through the seed Lambda. |
+| SEC-08 | **MUST:** invitations have a lifecycle: `expires_at` (**Default:** 14 days), a `status` of `pending`, `accepted` or `revoked`, at most one `pending` invitation per email (partial unique index), and acceptance stamped exactly once, in the same transaction that binds `cognito_sub` (ADR-0010). |
+| SEC-09 | **MUST:** the API reads claims **only** from the API Gateway authorizer context, never by parsing the `Authorization` header: the Lambda has no internet and cannot fetch JWKS to validate a token itself, so a parsed token would be unvalidated input. A request with no authorizer context is refused with 401, and no local claims stub can be active when running on Lambda (asserted by a test). |
 
 ---
 
@@ -75,7 +77,7 @@ flowchart LR
 | ID | Rule |
 |---|---|
 | SEC-10 | **MUST:** all permission decisions go through `internal/authz`. It is **deny by default** and checks every resource ID in a path or body against the actor's relationship (owner, accepted supervisor, peer with the same supervisor, admin). |
-| SEC-11 | **MUST:** roles from token claims are **re-verified against the database** on privileged calls. Revocation takes effect immediately (ADR-0002). |
+| SEC-11 | **MUST:** roles come from the **database**, and token claims grant nothing on their own. Until S5-05 assigns Cognito groups, `cognito:groups` is advisory only — the seeded first admin has no Cognito user until first sign-in, so a group claim can never be a requirement. Revocation takes effect on the next request (ADR-0002, ADR-0008). |
 | SEC-12 | **MUST:** SQL is scoped by the actor as well (`WHERE user_id = $actor` or a join on the accepted link and org). A missing authz call cannot then expose data. |
 | SEC-13 | **MUST:** admins **cannot read entries, notes or progress** unless they are also the accepted supervisor of that user. |
 | SEC-14 | **MUST:** admin routes reach only the `admin-orchestrator`, which checks the `admin` group before starting a workflow. The data step re-checks the admin in the DB (ADR-0002). |
@@ -109,11 +111,11 @@ These rules restate and extend the parameterized-query requirement (CLAUDE.md §
 | ID | Rule |
 |---|---|
 | SEC-30 | **MUST:** React renders user content as text. `dangerouslySetInnerHTML`, `innerHTML`, `eval` and `new Function` are banned by lint (FE-60). |
-| SEC-31 | **MUST:** the CloudFront response headers policy sets HSTS (`max-age=31536000; includeSubDomains`), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`, and a CSP of `default-src 'self'`, `connect-src 'self'` plus the Cognito domain, `img-src 'self' data:`, `object-src 'none'`, `base-uri 'self'` and `frame-ancestors 'none'` (ADR-0004). |
+| SEC-31 | **MUST:** the CloudFront response headers policy sets HSTS (`max-age=31536000; includeSubDomains`), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`, and a CSP of `default-src 'self'`, `connect-src 'self'` **plus the Cognito hosted-UI origin** (without it the PKCE code-for-token request is blocked in the browser while every header check still passes; the local development server serves the same policy and the Playwright header assertion requires it), `img-src 'self' data:`, `object-src 'none'`, `base-uri 'self'` and `frame-ancestors 'none'` (ADR-0004). |
 | SEC-32 | **MUST NOT:** add `'unsafe-inline'` or `'unsafe-eval'` to the CSP. Fonts and all scripts are self-hosted. |
 | SEC-33 | **MUST:** API responses set `Content-Type: application/json` (or `application/problem+json`) and `Cache-Control: no-store`. |
 | SEC-34 | **MUST:** error responses never include stack traces, SQL, internal IDs of other users, or upstream AWS error text. |
-| SEC-35 | **MUST:** tokens are kept out of `localStorage` and `sessionStorage` unless spike S1-02 records an approved alternative (FE-61). |
+| SEC-35 | **MUST:** tokens are kept out of `localStorage` and `sessionStorage` (FE-61). Tokens live in memory, so a page reload has no refresh token and re-authenticates silently through the hosted-UI session cookie; that behaviour is deliberate, recorded in ADR-0008, and covered by a test. |
 | SEC-36 | **MUST:** the Markdown export escapes `|` and newlines in cells, so a re-import can't be broken or injected. |
 | SEC-37 | **MUST:** the CSV export protects against **formula injection**. A cell starting with `=`, `+`, `-`, `@`, tab or carriage return is prefixed with `'`, and all cells are quoted with embedded quotes doubled. |
 | SEC-38 | **MUST:** the PDF export is generated in the browser from already-authorized data. It never fetches remote resources. |
@@ -210,6 +212,8 @@ These rules restate and extend the parameterized-query requirement (CLAUDE.md §
 ## 13. Security review checklist (every PR)
 
 - [ ] New route: authz call, relationship-scoped SQL, 404-not-403 where appropriate, negative tests (SEC-10 to SEC-16)
+- [ ] New route is behind the authorizer; only `/healthz` is unauthenticated (SEC-03)
+- [ ] Claims come from the authorizer context, roles from the database (SEC-09, SEC-11)
 - [ ] All SQL is static and parameterized; sort allowlisted; `LIKE` escaped (SEC-20 to SEC-25)
 - [ ] Every new string field has `maxLength` in the spec (SEC-26)
 - [ ] Response uses the right audience DTO; leak test added (SEC-40, SEC-41)

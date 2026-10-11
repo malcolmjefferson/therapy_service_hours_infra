@@ -7,7 +7,7 @@
 
 - **Slice S0 (walking skeleton):** 16 done, 0 in review, 0 in progress, 0 not started (of 16 tickets touching this repo).
 - **AWS:** S0 is complete through dev: the pipeline (2026-10-11) released dev end to end (data, migrate, app, web, frontend sync, smoke tests) at https://dx5eaoy4duyuy.cloudfront.net. **Prod deploys are deferred to milestone M3** (owner decision 2026-10-11): `RELEASE.deployProd` is off, so runs end after dev. The $50 account budget moves to the pipeline stack so it is active now.
-- **Next:** S1 (auth and invites). At M3, set `RELEASE.deployProd` to `true` in a PR to add the approval and prod stage.
+- **Next:** S1 (auth and invites). The slice was re-planned on 2026-10-11 after a design review (`docs/jira/S1-secure-sign-in.md`, now 20 tickets / 23.5 days): ADR-0007 is accepted (provisioned concurrency on the pre-sign-up trigger, about $1–3/month, owner approved 2026-10-11); ADR-0008 to ADR-0011 need the owner's acceptance before S1-01 starts. At M3, set `RELEASE.deployProd` to `true` in a PR to add the approval and prod stage.
 
 ## Tickets
 

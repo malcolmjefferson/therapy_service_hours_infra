@@ -212,7 +212,7 @@ Summary here; full rules in the [security standards](04-security-standards.md).
 | ID | Rule |
 |---|---|
 | FE-60 | **MUST NOT:** use `dangerouslySetInnerHTML`, `eval`, `new Function` or `innerHTML`. Notes and client names render as text only. |
-| FE-61 | **MUST NOT:** store tokens in `localStorage` or `sessionStorage` unless spike S1-02 records otherwise. **Default:** tokens live in memory, managed by the auth module in `src/lib`. |
+| FE-61 | **MUST NOT:** store tokens in `localStorage` or `sessionStorage`. Tokens live in memory, managed by the auth module in `src/lib`; a reload re-authenticates silently through the hosted-UI session cookie (ADR-0008). Sign-out revokes the refresh token, and a callback carrying `error`/`error_description` routes to the access-denied page. |
 | FE-62 | **MUST:** the SPA calls only same-origin `/api/v1/...` (ADR-0004). No hard-coded API hosts, and no third-party runtime scripts or CDNs. |
 | FE-63 | **MUST NOT:** put sensitive data (notes, client names) in URLs, analytics or console logs. URL state holds IDs and dates only. |
 | FE-64 | **MUST:** hide UI by role for convenience only. The server enforces every permission, and the UI must not rely on hiding. |
