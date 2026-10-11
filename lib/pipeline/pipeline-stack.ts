@@ -2,7 +2,8 @@ import { ArnFormat, Aspects, Aws, CfnOutput, Duration, Stack, StackProps, Tags }
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as codeconnections from 'aws-cdk-lib/aws-codeconnections';
 import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
-import * as notifications from 'aws-cdk-lib/aws-codestarnotifications';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
@@ -194,21 +195,44 @@ export class PipelineStack extends Stack {
       enforceSSL: true,
     });
     this.topic.addSubscription(new subscriptions.EmailSubscription(props.notificationEmail));
-    new notifications.NotificationRule(this, 'PipelineNotifications', {
-      notificationRuleName: `${APP_NAME}-pipeline`,
-      source: this.pipeline.pipeline,
-      events: [
-        'codepipeline-pipeline-pipeline-execution-failed',
-        'codepipeline-pipeline-manual-approval-needed',
-        'codepipeline-pipeline-pipeline-execution-succeeded',
-      ],
-      targets: [this.topic],
-      detailType: notifications.DetailType.BASIC,
-    });
+    this.notifyOn(this.pipeline.pipeline.pipelineName);
 
     new CfnOutput(this, 'ConnectionArn', {
       description: 'Authorize this GitHub connection once in the console (Developer Tools > Connections)',
       value: connection.attrConnectionArn,
+    });
+  }
+
+  /**
+   * Emails the owner when a run fails or succeeds and when the prod approval is waiting, through
+   * EventBridge rules on CodePipeline's own state-change events (free for AWS service events).
+   * CodeStar Notifications rejected this topic at deploy time ("Invalid request provided"), and
+   * EventBridge needs no extra service.
+   */
+  private notifyOn(pipelineName: string): void {
+    const field = (path: string) => events.EventField.fromPath(path);
+    const target = (message: string) => new targets.SnsTopic(this.topic, { message: events.RuleTargetInput.fromText(message) });
+    new events.Rule(this, 'RunFinishedRule', {
+      ruleName: `${APP_NAME}-pipeline-run-finished`,
+      description: 'Pipeline run failed or succeeded: email the owner',
+      eventPattern: {
+        source: ['aws.codepipeline'],
+        detailType: ['CodePipeline Pipeline Execution State Change'],
+        detail: { pipeline: [pipelineName], state: ['FAILED', 'SUCCEEDED'] },
+      },
+      targets: [target(`Pipeline ${field('$.detail.pipeline')} run ${field('$.detail.execution-id')}: ${field('$.detail.state')} (${field('$.region')}).`)],
+    });
+    new events.Rule(this, 'ApprovalNeededRule', {
+      ruleName: `${APP_NAME}-pipeline-approval-needed`,
+      description: 'The prod approval is waiting: email the owner',
+      eventPattern: {
+        source: ['aws.codepipeline'],
+        detailType: ['CodePipeline Action Execution State Change'],
+        detail: { pipeline: [pipelineName], state: ['STARTED'], type: { category: ['Approval'] } },
+      },
+      targets: [
+        target(`Pipeline ${field('$.detail.pipeline')} run ${field('$.detail.execution-id')}: approval ${field('$.detail.action')} is waiting. Check ReleaseInfo, then approve or reject in the CodePipeline console.`),
+      ],
     });
   }
 
