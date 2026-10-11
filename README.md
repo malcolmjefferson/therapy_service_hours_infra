@@ -110,7 +110,7 @@ lib/app-stage.ts  One environment: data, app and web stacks plus mandatory tags
 lib/app/          Stacks and constructs by concern (network, database, roles, migrate, api, web, alerts)
 lib/guards/       Synth-time guards (budget)
 lib/pipeline/     Release pipeline (CDK Pipelines)
-scripts/          smoke.sh (post-deploy smoke test)
+scripts/          smoke.sh (post-deploy smoke test), reregister-push-triggers.sh (runbook §4)
 test/             Vitest tests (CDK assertions, smoke script)
 docs/runbook.md   Operating procedures (S0-21)
 ```
