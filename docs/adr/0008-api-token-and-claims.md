@@ -1,6 +1,6 @@
 # ADR-0008: ID token as the API credential, claims only from the authorizer
 
-- **Status:** Proposed · **Date:** 2026-10-11 · **Deciders:** project owner
+- **Status:** Accepted · **Date:** 2026-10-11 (accepted 2026-10-11) · **Deciders:** project owner
 - **Related:** FR-AUTH-03, FR-AUTH-04, SEC-03, SEC-04, SEC-35 · Tickets: S1-02, S1-05, S1-06, S1-14, S1-15, S1-10
 
 ## Context

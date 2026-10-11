@@ -1,6 +1,6 @@
 # ADR-0009: The user pool lives in the data stack; callback URLs come from config
 
-- **Status:** Proposed · **Date:** 2026-10-11 · **Deciders:** project owner
+- **Status:** Accepted · **Date:** 2026-10-11 (accepted 2026-10-11) · **Deciders:** project owner
 - **Related:** FR-AUTH-01, FR-AUTH-03, NFR-SEC-04, ARC-27 · Tickets: S1-01, S1-16
 
 ## Context
