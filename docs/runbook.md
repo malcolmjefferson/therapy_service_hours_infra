@@ -259,8 +259,11 @@ defined in `lib/app/presignup-policy.ts`; this foundation release does not creat
 
 ### Invitation trigger deployment (S1-03)
 
-Release the backend `cmd/presignup` implementation first, then merge the paired infra change
-that adds `presignup` to `BACKEND_LAMBDAS`. Keep `auth.enabled: false` for this preparation
+The pipeline builds every backend `cmd/*` directory so a new binary exists before infra
+synthesis consumes it. Release the backend implementation first, then the infra construct
+that adds its name to `BackendLambda`/`BACKEND_LAMBDAS`. For pipelines still using a static
+build list, release the build-command change first: otherwise synth cannot reach the
+self-mutation that adds the missing binary. Keep `auth.enabled: false` for this preparation
 release. The app stack deploys `therapy-service-hours-dev-presignup:live` with 128 MiB,
 reserved concurrency 1 and provisioned concurrency 1 (ADR-0007's approved dev cost). The
 Go process opens and pings one `presignup_ro` IAM/TLS connection before starting the handler;

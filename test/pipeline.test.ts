@@ -1,4 +1,8 @@
 import { describe, expect, test } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { delimiter, join, resolve } from 'node:path';
 import { App } from 'aws-cdk-lib/core';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { PLACEHOLDER_ACCOUNT } from '../lib/account';
@@ -31,6 +35,35 @@ function buildSpecs(t: Template): string {
 }
 
 describe('release pipeline (S0-14, ADR-0005)', () => {
+  test('backend builds future command artifacts before infra can self-mutate to consume them', () => {
+    const projects = Object.values(pipelineTemplate().findResources('AWS::CodeBuild::Project')) as { Properties: { Source: { BuildSpec: string } } }[];
+    const specs = projects.map((p) => JSON.parse(p.Properties.Source.BuildSpec));
+    const commands = specs.map((s) => s.phases?.build?.commands as string[]).find((c) => c?.includes('go version'));
+    const build = commands?.find((c) => c.includes('GOARCH=arm64 go build'));
+    expect(build).toBeDefined();
+    const root = mkdtempSync(join(tmpdir(), 'backend-build-test-'));
+    const bash = process.platform === 'win32' ? resolve(execFileSync('git', ['--exec-path'], { encoding: 'utf8' }).trim(), '../../../bin/bash.exe') : 'bash';
+    try {
+      mkdirSync(join(root, 'cmd/api'), { recursive: true });
+      mkdirSync(join(root, 'cmd/future-seed'), { recursive: true });
+      writeFileSync(join(root, 'cmd/README'), 'not a command');
+      mkdirSync(join(root, 'fake-bin'));
+      writeFileSync(join(root, 'fake-bin/go'), '#!/bin/sh\nprintf "%s\\n" "$@" >> "$GO_ARGS_LOG"\ncase "$*" in *./cmd/broken*) exit 9 ;; esac\n', { mode: 0o755 });
+      const log = join(root, 'go-args');
+      const env = { ...process.env, PATH: `${join(root, 'fake-bin')}${delimiter}${process.env.PATH}`, GO_ARGS_LOG: log };
+      execFileSync(bash, ['-c', build!], { cwd: root, env });
+      expect(readFileSync(log, 'utf8')).toContain('dist/future-seed/bootstrap\n./cmd/future-seed');
+      expect(readFileSync(log, 'utf8')).not.toContain('README');
+      writeFileSync(log, '');
+      mkdirSync(join(root, 'cmd/broken'));
+      expect(() => execFileSync(bash, ['-c', build!], { cwd: root, env })).toThrow();
+      expect(readFileSync(log, 'utf8')).not.toContain('./cmd/future-seed');
+    } finally {
+      // Only remove the task-owned temporary fixture, never a checkout or caller-supplied path.
+      if (resolve(root).startsWith(resolve(tmpdir()) + '/')) rmSync(root, { recursive: true, force: true });
+      else if (process.platform === 'win32' && resolve(root).startsWith(resolve(tmpdir()) + '\\')) rmSync(root, { recursive: true, force: true });
+    }
+  });
   test('CodePipeline V2 in QUEUED mode, so a pending approval is never superseded', () => {
     pipelineTemplate().hasResourceProperties('AWS::CodePipeline::Pipeline', {
       Name: 'therapy-service-hours',

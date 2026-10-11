@@ -10,8 +10,12 @@ Secrets Manager values were inspected only in memory and were never printed. The
 Read-only Google console review confirmed the saved authorized JavaScript origin and redirect
 URI exactly match the dev settings below. The reviewed Web application client's ID also
 matches the AWS secret (only a match flag was displayed; no credential values were recorded).
-Earlier sign-in redirects were resolved after the owner opened the Clients page. Scope review
-and live credential/federation verification remain outstanding; saved URLs and structural
+Earlier sign-in redirects were resolved after the owner opened the Clients page. A read-only
+review on 2026-10-11 also verified exactly `openid`, `userinfo.email` and `userinfo.profile`
+under non-sensitive scopes, with no sensitive or restricted scopes. Audience is External and
+Testing. The console currently lists no test users; Google documents an exception to the testing
+user restriction for these basic identity scopes alone ([audience documentation](https://support.google.com/cloud/answer/15549945?hl=en)).
+Live credential/federation verification remains outstanding; saved URLs and structural
 secret checks do not prove an end-to-end sign-in.
 Both environments have `auth.enabled: false`; merging this preparation creates no
 Cognito resources and makes no Google secret lookup. S1-01 stays in progress until activation and
@@ -19,6 +23,8 @@ deployment verification finish. The owner creates the Google client; credential 
 belong in chat, Git, CDK context, logs or the SPA bundle.
 
 S1-03 deploys the isolated-VPC pre-sign-up `live` alias first while auth remains disabled.
+This preparation succeeded in release `7c97ec40-371c-4387-8c26-817c75450d4c`: alias READY
+at provisioned concurrency 1/1, synthetic uninvited denial and safe decision logs verified.
 Before later pool activation, verify that its provisioned concurrency is READY and that it
 rejects a synthetic uninvited event. The app construct then installs its stable named ARN into
 the data-owned pool template and grants pool-scoped alias invocation without a reverse stack
@@ -103,7 +109,8 @@ The Google credential secret adds **$0.40/month per environment**, plus API call
 secrets: approximately $0.80/month), separate from the existing RDS master secret. See
 [Secrets Manager pricing](https://aws.amazon.com/secrets-manager/pricing/). The approved
 pre-sign-up provisioned concurrency cost remains approximately $1–3/month (ADR-0007).
-This disabled preparation creates none of these new resources.
+The Cognito resources remain disabled; the separately deployed pre-sign-up alias incurs its
+approved provisioned-concurrency cost.
 
 ## Prod at M3
 
