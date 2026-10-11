@@ -11,10 +11,10 @@ Format: lightweight [MADR](https://adr.github.io/madr/). Status values: **Propos
 | [0005](0005-single-infra-owned-pipeline.md) | One infra-owned pipeline for three repositories | Accepted | S0 | §2, §13 |
 | [0006](0006-openapi-contract-and-codegen.md) | OpenAPI as the contract, with pinned copy and drift gate | Accepted | S0 | §3, §10 (adds oapi-codegen) |
 | [0007](0007-presignup-allowlist-latency.md) | Pre-sign-up allowlist inside the VPC, with a measured latency budget | Accepted | S1 | §4.1 (provisioned concurrency), §9 |
-| [0008](0008-api-token-and-claims.md) | ID token as the API credential, claims only from the authorizer | Proposed | S1 | §10, §11.2 |
-| [0009](0009-cognito-pool-placement.md) | The user pool lives in the data stack; callback URLs come from config | Proposed | S1 | §4 diagram, §4.2 |
-| [0010](0010-invitation-lifecycle.md) | Invitation lifecycle and just-in-time user provisioning | Proposed | S1 | §9 (invitations columns) |
-| [0011](0011-automated-sign-in-testing.md) | Automated sign-in tests use a dev-only password app client | Proposed | S1 | §14 (testing strategy) |
+| [0008](0008-api-token-and-claims.md) | ID token as the API credential, claims only from the authorizer | Accepted | S1 | §10, §11.2 |
+| [0009](0009-cognito-pool-placement.md) | The user pool lives in the data stack; callback URLs come from config | Accepted | S1 | §4 diagram, §4.2 |
+| [0010](0010-invitation-lifecycle.md) | Invitation lifecycle and just-in-time user provisioning | Accepted | S1 | §9 (invitations columns) |
+| [0011](0011-automated-sign-in-testing.md) | Automated sign-in tests use a dev-only password app client | Accepted | S1 | §14 (testing strategy) |
 
 ## Deviations and refinements to CLAUDE.md (apply after acceptance)
 

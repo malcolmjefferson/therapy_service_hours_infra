@@ -1,6 +1,6 @@
 # ADR-0011: Automated sign-in tests use a dev-only password app client
 
-- **Status:** Proposed · **Date:** 2026-10-11 · **Deciders:** project owner
+- **Status:** Accepted · **Date:** 2026-10-11 (accepted 2026-10-11) · **Deciders:** project owner
 - **Related:** FR-AUTH-01, FR-AUTH-06, SEC-01, SEC-45 · Tickets: S1-02, S1-09, S1-13, S1-14
 
 ## Context

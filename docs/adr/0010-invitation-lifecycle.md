@@ -1,6 +1,6 @@
 # ADR-0010: Invitation lifecycle and just-in-time user provisioning
 
-- **Status:** Proposed · **Date:** 2026-10-11 · **Deciders:** project owner
+- **Status:** Accepted · **Date:** 2026-10-11 (accepted 2026-10-11) · **Deciders:** project owner
 - **Related:** FR-AUTH-01, FR-AUTH-02, FR-AUTH-03, FR-ADM-05, FR-ADM-08, SEC-02, SEC-06 · Tickets: S1-04, S1-03, S1-06, S1-09
 
 ## Context

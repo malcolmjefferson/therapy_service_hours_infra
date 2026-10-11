@@ -1,7 +1,7 @@
 # CLAUDE.md: Therapy Service Hours Tracker
 
 > Project specification and working agreements for Claude Code.
-> Source: planning interview, 2026-10-09. Decisions recorded 2026-10-10 (ADR-0001 to ADR-0006 accepted; assumptions confirmed). Status: **planning complete, implementation not started.**
+> Source: planning interview, 2026-10-09. Decisions recorded 2026-10-10 (ADR-0001 to ADR-0006 accepted; assumptions confirmed). Status: **S0 deployed to dev; S1 execution started 2026-10-11.**
 > This file is shared context for all three repositories. Copy it into the root of each repo, or keep one copy in `therapy_service_hours_infra` and reference it from the others.
 
 ---
@@ -76,12 +76,12 @@ A hosted web app for therapy trainees to log service hours against licensure goa
 | DB migrations in pipeline | Dedicated **migration Lambda** inside the VPC (goose, embedded migrations, advisory lock), **invoked by a non-VPC CodeBuild step** before each app deploy; prod snapshot first | Accepted (ADR-0003) |
 | API routing | CloudFront behavior `/api/*` routed to API Gateway so the SPA and API share one origin (no CORS). SPA routing via a **CloudFront Function** rewrite on the S3 behavior only (no distribution-wide error responses) | Accepted (ADR-0004) |
 | Pipeline layout | **One CDK Pipelines pipeline owned by the infra repo** with all three repos as sources, queued execution mode, same artifacts promoted dev to prod | Accepted (ADR-0005) |
-| API credential | **ID token** as the bearer credential (access tokens carry no `email`, so first-sign-in binding needs the ID token); claims read **only** from the API Gateway authorizer context | Proposed (ADR-0008) |
-| Route protection | Cognito JWT authorizer on `ANY /api/v1/{proxy+}`, with `GET /api/v1/healthz` on its own **unauthenticated** route (authorizers are per route) | Proposed (ADR-0008) |
+| API credential | **ID token** as the bearer credential (access tokens carry no `email`, so first-sign-in binding needs the ID token); claims read **only** from the API Gateway authorizer context | Accepted (ADR-0008) |
+| Route protection | Cognito JWT authorizer on `ANY /api/v1/{proxy+}`, with `GET /api/v1/healthz` on its own **unauthenticated** route (authorizers are per route) | Accepted (ADR-0008) |
 | Pre-sign-up allowlist | VPC trigger reading `invitations` as a read-only role, with **provisioned concurrency** so it answers inside Cognito's fixed 5-second trigger timeout (about $1–3/month, approved 2026-10-11) | Accepted (ADR-0007) |
-| Cognito pool placement | User pool, groups, IdP and app clients in the **data stack** (stateful, retained in prod); callback and logout URLs from `EnvConfig`, never a CloudFront stack reference | Proposed (ADR-0009) |
-| Invitation lifecycle | `invitations` gains `expires_at` (14-day default) and `status`; first sign-in provisions the `users` row from a pending invitation and stamps acceptance | Proposed (ADR-0010) |
-| Sign-in tests | A **dev-only** password app client plus synthetic test users for Playwright and the authenticated smoke check; the Google path is demonstrated manually | Proposed (ADR-0011) |
+| Cognito pool placement | User pool, groups, IdP and app clients in the **data stack** (stateful, retained in prod); callback and logout URLs from `EnvConfig`, never a CloudFront stack reference | Accepted (ADR-0009) |
+| Invitation lifecycle | `invitations` gains `expires_at` (14-day default) and `status`; first sign-in provisions the `users` row from a pending invitation and stamps acceptance | Accepted (ADR-0010) |
+| Sign-in tests | A **dev-only** password app client plus synthetic test users for Playwright and the authenticated smoke check; the Google path is demonstrated manually | Accepted (ADR-0011) |
 | API contract tooling | `api/openapi.yaml` is the source of truth; backend **oapi-codegen** (strict chi server); frontend **openapi-typescript** + **openapi-fetch** with a pinned spec copy and a CI drift gate; `spectral` lint and `oasdiff` breaking-change check | Accepted (ADR-0006) |
 
 ---
