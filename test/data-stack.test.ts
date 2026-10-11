@@ -77,6 +77,8 @@ describe('database (S0-07)', () => {
     dataTemplate().hasResourceProperties('AWS::RDS::DBInstance', {
       Engine: 'postgres',
       EngineVersion: Match.stringLikeRegexp('^17\\.'),
+      // The template pins the minor version, so RDS must not move the instance past it.
+      AutoMinorVersionUpgrade: false,
       DBInstanceClass: 'db.t4g.micro',
       MultiAZ: false,
       StorageEncrypted: true,

@@ -215,6 +215,13 @@ The Lambdas verify the database certificate against `internal/db/certs/us-west-2
 
 Current CAs expire in 2061 (RSA2048) and 2121 (RSA4096, ECC384).
 
+### Minor version upgrades
+
+`lib/app/database.ts` pins the PostgreSQL minor version (`POSTGRES_ENGINE_VERSION`), and automatic minor upgrades are off, so the template always matches the instance. Monthly, or when AWS announces a security release:
+
+1. List versions: `aws rds describe-db-engine-versions --engine postgres --engine-version 17 --query "DBEngineVersions[].EngineVersion"`.
+2. Bump the constant in a PR. The pipeline applies it to dev, then to prod after approval; the instance restarts during that deploy (a few minutes of downtime).
+
 ## 11. Accepted risks and known exposures
 
 - **API Gateway default endpoint is public** (ADR-0004). Users go through CloudFront, but `https://<api-id>.execute-api.us-west-2.amazonaws.com` (the `ApiEndpoint` output) is reachable directly and its responses skip the CloudFront security headers. Mitigations: every route except `/api/v1/healthz` requires a Cognito JWT (S1), stage throttling applies on both paths, and the API returns JSON only (no HTML to frame or script).
