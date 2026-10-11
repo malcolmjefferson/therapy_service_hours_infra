@@ -44,6 +44,6 @@ describe('Lambda execution roles cannot recreate their log groups', () => {
         expect(resources).toContain(`log-group:/aws/lambda/${name}:*"`);
       }
     }
-    expect(seen.map((n) => n.slice(prefix.length)).sort()).toEqual(['api', 'db-bootstrap', 'db-bootstrap-provider', 'migrate']);
+    expect(seen.map((n) => n.slice(prefix.length)).sort()).toEqual(['api', 'db-bootstrap', 'db-bootstrap-provider', 'migrate', 'presignup']);
   });
 });

@@ -20,6 +20,7 @@ export const devConfig: EnvConfig = {
     removalPolicy: RemovalPolicy.DESTROY,
     deletionProtection: false,
     createPasswordTestClient: true,
+    preSignUp: { memoryMiB: 128, reservedConcurrency: 1, provisionedConcurrency: 1 },
   },
   api: {
     reservedConcurrency: 20,
