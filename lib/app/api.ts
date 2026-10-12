@@ -2,6 +2,7 @@ import { ArnFormat, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib/core';
 import { AccessLogFormat } from 'aws-cdk-lib/aws-apigateway';
 import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import { HttpJwtAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
@@ -12,6 +13,7 @@ import { denyLogGroupCreation } from './lambda-role';
 import { EnvConfig } from '../../config';
 import { LambdaArtifacts } from '../artifacts';
 import { DATABASE_NAME } from './database';
+import { Auth } from './auth';
 
 /** Database role the API connects as (ADR-0001). Created by the role bootstrap (S0-08). */
 export const API_DB_USER = 'app_rw';
@@ -24,6 +26,7 @@ export interface ApiProps {
   readonly vpc: ec2.IVpc;
   readonly appSecurityGroup: ec2.ISecurityGroup;
   readonly database: rds.IDatabaseInstance;
+  readonly auth?: Auth;
 }
 
 /**
@@ -45,6 +48,7 @@ export class Api extends Construct {
     super(scope, id);
     const { config, prefix } = props;
     const stack = Stack.of(this);
+    if (config.auth.enabled !== Boolean(props.auth)) throw new Error('API auth configuration must match the data stack');
 
     const fnLogs = new logs.LogGroup(this, 'FunctionLogs', {
       logGroupName: `/aws/lambda/${prefix}api`,
@@ -100,12 +104,14 @@ export class Api extends Construct {
       description: 'Therapy Service Hours API (reached through CloudFront /api/*, ADR-0004)',
       createDefaultStage: false,
     });
+    const integration = new HttpLambdaIntegration('Api', this.function, { payloadFormatVersion: apigwv2.PayloadFormatVersion.VERSION_2_0 });
+    const audiences = props.auth ? [props.auth.spaClient.userPoolClientId, ...(props.auth.passwordTestClient ? [props.auth.passwordTestClient.userPoolClientId] : [])] : [];
+    const authorizer = props.auth ? new HttpJwtAuthorizer('CognitoJwt', `https://cognito-idp.${config.region}.amazonaws.com/${props.auth.userPool.userPoolId}`, { jwtAudience: audiences }) : undefined;
+    this.httpApi.addRoutes({ path: '/api/v1/healthz', methods: [apigwv2.HttpMethod.GET], integration });
     this.httpApi.addRoutes({
       path: '/api/v1/{proxy+}',
       methods: [apigwv2.HttpMethod.ANY],
-      integration: new HttpLambdaIntegration('Api', this.function, {
-        payloadFormatVersion: apigwv2.PayloadFormatVersion.VERSION_2_0,
-      }),
+      integration, authorizer,
     });
 
     const accessLogs = new logs.LogGroup(this, 'AccessLogs', {

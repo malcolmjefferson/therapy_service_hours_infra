@@ -64,7 +64,8 @@ describe('api (S0-11)', () => {
 
   test('one proxy route sends /api/v1/* to the Lambda; unknown paths are answered by the Go router', () => {
     const t = appTemplate();
-    t.resourceCountIs('AWS::ApiGatewayV2::Route', 1);
+    t.resourceCountIs('AWS::ApiGatewayV2::Route', 2);
+    t.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: 'GET /api/v1/healthz', AuthorizationType: 'NONE' });
     t.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: 'ANY /api/v1/{proxy+}' });
     t.hasResourceProperties('AWS::ApiGatewayV2::Integration', { IntegrationType: 'AWS_PROXY', PayloadFormatVersion: '2.0' });
   });

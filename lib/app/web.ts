@@ -25,6 +25,16 @@ export const CONTENT_SECURITY_POLICY = [
   'upgrade-insecure-requests',
 ].join('; ');
 
+/** Fixed Cognito origin from reviewed config; no wildcard or cross-stack token is needed. */
+export function hostedUiOrigin(config: EnvConfig): string {
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(config.auth.domainPrefix)) throw new Error('Invalid Cognito domain prefix');
+  return `https://${config.auth.domainPrefix}.auth.${config.region}.amazoncognito.com`;
+}
+
+export function contentSecurityPolicy(config: EnvConfig): string {
+  return CONTENT_SECURITY_POLICY.replace("connect-src 'self'", `connect-src 'self' ${hostedUiOrigin(config)}`);
+}
+
 /** Props for {@link Web}. */
 export interface WebProps {
   readonly config: EnvConfig;
@@ -80,7 +90,7 @@ export class Web extends Construct {
         contentTypeOptions: { override: true },
         frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
         referrerPolicy: { referrerPolicy: cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN, override: true },
-        contentSecurityPolicy: { contentSecurityPolicy: CONTENT_SECURITY_POLICY, override: true },
+        contentSecurityPolicy: { contentSecurityPolicy: contentSecurityPolicy(config), override: true },
       },
     });
 

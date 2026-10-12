@@ -38,9 +38,17 @@ security_headers health
 ok "healthz 200 JSON ($(grep -o '"version":"[^"]*"' "$work/health.body"))"
 
 status="$(fetch missing /api/v1/smoke-test-does-not-exist)"
-[[ "$status" == 404 ]] || fail "unknown API path returned $status, expected 404 (not index.html)"
-expect_header missing content-type application/problem+json
-ok "unknown API path is problem+json 404"
+if [[ "${AUTH_ENABLED:-false}" == true ]]; then
+  [[ "$status" == 401 ]] || fail "unknown API path returned $status, expected 401 without a token"
+  expect_header missing content-type application/json
+  status="$(fetch profile /api/v1/me)"
+  [[ "$status" == 401 ]] || fail "/me returned $status without a token"
+  ok "protected routes reject requests without tokens"
+else
+  [[ "$status" == 404 ]] || fail "unknown API path returned $status, expected 404 (not index.html)"
+  expect_header missing content-type application/problem+json
+  ok "unknown API path is problem+json 404"
+fi
 
 status="$(fetch deeplink /schedules)"
 [[ "$status" == 200 ]] || fail "SPA deep link /schedules returned $status"
