@@ -378,7 +378,7 @@ For a manual production seed, use an owner-authorized IAM invocation with a JSON
 Replace the fictional email locally. Do not print the payload in shared logs. The function returns
 counts and stable codes only; this operation creates a DB invitation/row, never a native Cognito
 identity for the real admin. First Google sign-in and S1-06 perform the subject binding. Additional
-admin addresses can be seeded the same way; formal recovery acceptance remains S1-20.
+admin addresses can be seeded the same way; follow the recovery procedure in section 17.
 
 Test-password rotation is coordinated: changing the managed secret alone leaves existing native
 passwords unchanged. Update the three fixed synthetic users through the same scoped IAM operator
@@ -422,3 +422,91 @@ Measured preparation evidence (2026-10-11): the deployed trigger's two `INIT_REP
 were 2805.16 and 3057.93 ms; the first synthetic uninvited decision took 66 ms. These are small
 samples of provisioned initialization and a warm database-backed request, not cold/warm p99
 or real federation proof. S1-18 must collect a representative sample and actual Google sign-ins.
+
+## 17. Additional admin and Google-account recovery (S1-20)
+
+**Owner decision (2026-10-11):** keep the existing owner-selected account as the sole dev
+admin for now. No second live address is seeded by this story. The procedure below remains
+available if the owner authorizes a second Google identity or loses access to the first.
+Production remains deferred to M3; these instructions do not authorize a production invocation.
+
+The seed Lambda already accepts any valid additional admin email. It creates one active
+admin row in Default Organization and a pending 14-day invitation. It does not change the
+first admin, manufacture a Cognito subject, create a password account or send a notification.
+The new admin uses the normal verified Google sign-in and invitation/binding flow. Existing
+users with conflicting roles, organization or deactivation cause `SEED_CONFLICT`; this is
+bootstrap of an additional identity, not a way to promote or reactivate an existing account.
+
+### Before invoking
+
+1. Obtain the owner's authorization for the exact additional Google identity and target
+   environment. Confirm the identity can sign in to Google and the invitation's organization
+   is appropriate. Record authorization in the private operational record.
+2. Use an authenticated owner-authorized IAM session with `lambda:InvokeFunction` restricted
+   to the target seed function. The automatic dev operator trusts only its CodeBuild runner;
+   do not widen that trust or try to assume it from a human session. Production has no automatic
+   seed operator. Keep the procedure available through the account owner's recovery access.
+3. Verify `aws sts get-caller-identity` selects account `098536000083`, and verify the target
+   function's deployed `APP_ENV` is the intended environment. Its name is
+   `therapy-service-hours-dev-seed` or, after production deployment,
+   `therapy-service-hours-prod-seed`. Stop on any mismatch or missing function.
+4. Ensure the normal pool, Google provider, allowlist trigger, Gateway and browser configuration
+   are released and enabled before expecting sign-in. An auth-disabled seed can prepare the
+   database but cannot demonstrate Google access. Confirm the trigger alias is READY.
+
+### Invoke the reviewed seed function
+
+Create `admin-recovery-request.json` in a private local directory accessible only to the
+operator. Use a local editor to replace the fictional email with the authorized Google address.
+Do not place the address in process arguments, shared shell history, logs or public tickets.
+Do not reuse the pipeline's fixed `ADMIN_EMAIL` setting for a one-off recovery operation.
+
+For **dev**:
+
+```json
+{"admin_email":"recovery-admin@example.test","include_dev_users":false,"allow_prod":false}
+```
+
+```bash
+aws lambda invoke --region us-west-2 --function-name arn:aws:lambda:us-west-2:098536000083:function:therapy-service-hours-dev-seed --invocation-type RequestResponse --log-type None --payload fileb://admin-recovery-request.json admin-recovery-response.json --no-cli-pager
+```
+
+For **production**, after its release and separate owner authorization, the explicit
+`allow_prod:true` flag is mandatory and dev fixtures must remain false:
+
+```json
+{"admin_email":"recovery-admin@example.test","include_dev_users":false,"allow_prod":true}
+```
+
+```bash
+aws lambda invoke --region us-west-2 --function-name arn:aws:lambda:us-west-2:098536000083:function:therapy-service-hours-prod-seed --invocation-type RequestResponse --log-type None --payload fileb://admin-recovery-request.json admin-recovery-response.json --no-cli-pager
+```
+
+Use the matching function and payload together. The flag alone never changes the Lambda's
+environment, and a production request without the flag is refused before opening storage.
+These single-line AWS CLI commands also work in PowerShell from the private directory.
+
+### Verify and finish
+
+1. Check the invocation metadata for `FunctionError`, then inspect the response file.
+   A successful Lambda invocation status alone is insufficient: the response must contain
+   `status:"ok"`. For a new address expect one account and one invitation created, zero renewed.
+   Repeating the same pending request before expiry must return all zero counts. Expired pending
+   invitations are revoked and replaced, preserving history; a bound account is not re-invited.
+2. Treat `SEED_NOT_ALLOWED`, `INVALID_SEED_REQUEST`, `SEED_CONFLICT` and `SEED_UNAVAILABLE`
+   as refusals. Use safe Lambda request IDs and codes to investigate. Do not clear bindings,
+   reset roles or reactivate an account to bypass a conflict. If an invocation times out after
+   writing, retry the same authorized payload; the database operation is atomic and idempotent.
+3. Within 14 days, have the additional admin use normal Google sign-in. Confirm `/api/v1/me`
+   shows the admin role from the database and the intended organization. Confirm the original
+   admin remains unchanged. Later admin-console slices supply privileged endpoint checks;
+   token groups alone never prove application authority. Record only safe acceptance evidence.
+4. Delete the local request file when no longer needed; preserve counts, request IDs and the
+   authorization record privately. Seeding has no automatic rollback: any subsequent removal
+   of the added privilege requires a separately authorized account-management change. Losing
+   a Google account does not justify transferring its Cognito subject to a different email.
+
+Regression verification lives in backend `internal/migrate/admin_recovery_test.go`: PostgreSQL
+tests add and bind a separate admin in dev and explicitly opted-in prod, preserve the original
+bound account and invitation history, confirm repeat idempotency, and prove prod refusal makes
+no database changes. These use fictional identities and do not claim a live recovery drill.
