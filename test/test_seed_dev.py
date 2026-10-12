@@ -3,6 +3,8 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 
 spec = importlib.util.spec_from_file_location("seed_dev", Path(__file__).resolve().parents[1] / "scripts/seed_dev.py")
 seed = importlib.util.module_from_spec(spec)
@@ -45,6 +47,51 @@ class FakeAWS:
             self.groups.setdefault(username, set()).add(request["GroupName"])
             return {}
         raise AssertionError(operation)
+
+
+class AwsCLITests(unittest.TestCase):
+    def test_lambda_invocation_uses_explicit_arguments_and_private_payload_file(self):
+        identity = {"admin_email": "private@example.test", "include_dev_users": True, "allow_prod": False}
+        paths = []
+
+        def invoke(args, **kwargs):
+            self.assertEqual(args[:3], ["aws", "lambda", "invoke"])
+            self.assertNotIn("--cli-input-json", args)
+            self.assertEqual(args[args.index("--function-name") + 1], "therapy-service-hours-dev-seed")
+            source = args[args.index("--payload") + 1]
+            self.assertTrue(source.startswith("fileb://"))
+            request = Path(source.removeprefix("fileb://"))
+            paths.append(request)
+            self.assertEqual(json.loads(request.read_text(encoding="utf-8")), identity)
+            self.assertNotIn(identity["admin_email"], " ".join(args))
+            if seed.os.name != "nt":
+                self.assertEqual(request.stat().st_mode & 0o077, 0)
+            self.assertTrue(kwargs["capture_output"])
+            Path(args[-1]).write_text('{"status":"ok","accounts_created":3}', encoding="utf-8")
+            return SimpleNamespace(returncode=0, stdout='{"StatusCode":200}', stderr="")
+
+        with patch.object(seed.subprocess, "run", side_effect=invoke) as process:
+            result = seed.AwsCLI({})("lambda", "invoke", {"FunctionName": "therapy-service-hours-dev-seed", "Payload": json.dumps(identity)})
+        self.assertEqual(result, {"status": "ok", "accounts_created": 3})
+        process.assert_called_once()
+        self.assertFalse(paths[0].exists())
+
+    def test_other_aws_operations_keep_json_input_and_captured_credentials(self):
+        def assume(args, **kwargs):
+            self.assertEqual(args[:3], ["aws", "sts", "assume-role"])
+            source = args[args.index("--cli-input-json") + 1]
+            self.assertEqual(json.loads(Path(source.removeprefix("file://")).read_text(encoding="utf-8")), {"RoleArn": "synthetic-role"})
+            return SimpleNamespace(returncode=0, stdout='{"Credentials":{"SessionToken":"synthetic-token"}}', stderr="")
+
+        with patch.object(seed.subprocess, "run", side_effect=assume):
+            result = seed.AwsCLI({})("sts", "assume-role", {"RoleArn": "synthetic-role"})
+        self.assertEqual(result["Credentials"]["SessionToken"], "synthetic-token")
+
+    def test_lambda_failure_does_not_expose_identity_or_cli_error(self):
+        response = SimpleNamespace(returncode=1, stdout="", stderr="private@example.test synthetic-password")
+        with patch.object(seed.subprocess, "run", return_value=response):
+            with self.assertRaisesRegex(seed.SeedFailure, "^SEED_AWS_CALL_FAILED$"):
+                seed.AwsCLI({})("lambda", "invoke", {"FunctionName": "therapy-service-hours-dev-seed", "Payload": "{}"})
 
 
 class SeedTests(unittest.TestCase):

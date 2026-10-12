@@ -23,9 +23,14 @@ class AwsCLI:
             request = root / "request.json"
             request.write_text(json.dumps(payload), encoding="utf-8")
             request.chmod(0o600)
-            args = ["aws", service, operation, "--region", "us-west-2", "--no-cli-pager", "--no-cli-auto-prompt", "--cli-input-json", "file://" + str(request), "--cli-binary-format", "raw-in-base64-out", "--output", "json"]
+            args = ["aws", service, operation, "--region", "us-west-2", "--no-cli-pager", "--no-cli-auto-prompt", "--cli-binary-format", "raw-in-base64-out", "--output", "json"]
             if service == "lambda" and operation == "invoke":
-                args.append(str(root / "response.json"))
+                # Lambda's custom CLI command requires explicit arguments. Keep the
+                # identity payload in a private file rather than the process argv.
+                request.write_text(payload["Payload"], encoding="utf-8")
+                args.extend(["--function-name", payload["FunctionName"], "--payload", "fileb://" + str(request), str(root / "response.json")])
+            else:
+                args.extend(["--cli-input-json", "file://" + str(request)])
             result = subprocess.run(args, env=self.env, capture_output=True, text=True, encoding="utf-8", check=False)
             if result.returncode:
                 if operation == "admin-get-user" and "(UserNotFoundException)" in result.stderr:
