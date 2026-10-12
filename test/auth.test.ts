@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { App } from 'aws-cdk-lib/core';
 import { devConfig, EnvConfig, prodConfig } from '../config';
+import { RELEASE } from '../config/release';
 import { buildStage, stacksOf, untaggedResources } from './helpers';
 
 function enabledConfig(config: EnvConfig): EnvConfig {
@@ -9,14 +10,22 @@ function enabledConfig(config: EnvConfig): EnvConfig {
 }
 
 function enabledStage(config: EnvConfig) {
-  // Tests exercise the prepared resources; activation stays off in deploy config.
+  // Exercise either environment's enabled graph without changing its deploy config.
   return buildStage(enabledConfig(config), new App());
 }
 
 describe('Cognito activation safety (SEC-02)', () => {
-  test.each([devConfig, prodConfig])('default $envName deployment has no auth resources or Google secret dependency', (config) => {
-    expect(config.auth.enabled).toBe(false);
-    const stage = buildStage(config);
+  test('deployment activates dev only and keeps production deferred', () => {
+    expect(devConfig.auth.enabled).toBe(true);
+    expect(prodConfig.auth.enabled).toBe(false);
+    expect(RELEASE.deployProd).toBe(false);
+    const stage = buildStage(devConfig);
+    Template.fromStack(stage.dataStack).resourceCountIs('AWS::Cognito::UserPool', 1);
+    Template.fromStack(stage.appStack).resourceCountIs('AWS::ApiGatewayV2::Authorizer', 1);
+  });
+
+  test.each([devConfig, prodConfig])('disabled $envName configuration has no auth resources or Google secret dependency', (config) => {
+    const stage = buildStage({ ...config, auth: { ...config.auth, enabled: false } });
     expect(stage.dataStack.auth).toBeUndefined();
     const template = Template.fromStack(stage.dataStack);
     for (const type of ['UserPool', 'UserPoolClient', 'UserPoolIdentityProvider', 'UserPoolDomain', 'UserPoolGroup']) {

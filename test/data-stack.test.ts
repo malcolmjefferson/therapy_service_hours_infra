@@ -95,7 +95,8 @@ describe('database (S0-07)', () => {
       MasterUsername: 'dbadmin',
       MasterUserPassword: Match.absent(),
     });
-    t.resourceCountIs('AWS::SecretsManager::Secret', 0);
+    const secrets = Object.values(t.findResources('AWS::SecretsManager::Secret'));
+    expect(secrets.map((resource) => resource.Properties.Name)).toEqual(['therapy-service-hours-dev-auth-test-users']);
   });
 
   test('TLS is required by the parameter group', () => {

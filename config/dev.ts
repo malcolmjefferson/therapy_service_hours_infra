@@ -11,7 +11,7 @@ export const devConfig: EnvConfig = {
   seed: { onDeploy: true, adminEmail: 'malcolmj0415@gmail.com', includeDevUsers: true, reservedConcurrency: 1 },
   logRetention: RetentionDays.TWO_WEEKS,
   auth: {
-    enabled: false, // Google secret and S1-03 trigger must exist before activation.
+    enabled: true, // Paired Gateway/browser preparation is released; activate dev only.
     googleSecretName: 'therapy-service-hours/dev/google-oauth',
     googleClientIdKey: 'client_id',
     googleClientSecretKey: 'client_secret',

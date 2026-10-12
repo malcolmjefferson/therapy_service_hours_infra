@@ -42,7 +42,9 @@ describe('api (S0-11)', () => {
         },
       },
     });
-    expect(JSON.stringify(appTemplate().toJSON())).not.toMatch(/PASSWORD|secretsmanager/i);
+    const functions = Object.values(appTemplate().findResources('AWS::Lambda::Function'));
+    const api = functions.find((resource) => resource.Properties.FunctionName === 'therapy-service-hours-dev-api');
+    expect(JSON.stringify(api?.Properties.Environment)).not.toMatch(/PASSWORD|secretsmanager/i);
   });
 
   test('the role may connect to the database only as app_rw (ADR-0001, SEC-64)', () => {

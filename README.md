@@ -118,9 +118,9 @@ docs/runbook.md   Operating procedures (S0-21)
 ## Dev identity seeding (S1-09)
 
 The dev pipeline invokes the IAM-protected VPC seed Lambda after app deployment (and migrations).
-The owner selected the first admin in `config/dev.ts`. Auth stays disabled in this preparation,
-so the step initially creates only database rows/invitations. With auth enabled later, the
-same non-VPC step creates the three fixed native test users with suppressed messages, using
+The owner selected the first admin in `config/dev.ts`. The preparation releases created only
+database rows/invitations. Dev activation enables the same non-VPC step to create the three
+fixed native test users with suppressed messages, using
 the generated password in `therapy-service-hours-dev-auth-test-users`. That secret adds about
 $0.40/month on activation; no new npm/Python runtime dependency is needed.
 
@@ -136,9 +136,11 @@ and full credential-less synthesis. Google federation and p99 remain S1-18.
 
 ## Contributing
 
-S1 Cognito preparation is documented in [Google OAuth setup](docs/google-oauth-setup.md).
-Both environments keep auth disabled until credential setup is verified and S1-03 wires the
-invitation allowlist. The dev secret is verified; this preparation does not deploy working sign-in.
+S1 Cognito is documented in [Google OAuth setup](docs/google-oauth-setup.md).
+Dev activation follows the verified secret, live invitation gate and paired Gateway/browser
+releases. Prod auth and production deployment remain off until M3. Follow the
+[activation acceptance procedure](docs/runbook.md#18-dev-auth-activation-and-acceptance);
+configuration and synthetic trigger checks do not prove real Google sign-in.
 
 - `main` is protected: changes go through a pull request with passing checks (ARC-49).
 - Work on a branch named after the ticket, for example `feat/S0-03-backend-skeleton`.
