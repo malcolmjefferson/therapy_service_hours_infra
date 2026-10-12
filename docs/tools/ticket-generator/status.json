@@ -279,25 +279,34 @@
       "status": "in progress",
       "merged": false,
       "notes": "Prepared Gateway JWT authorizer with issuer and SPA/dev-only test audiences; exactly one public health route is asserted for enabled environments. No-token release checks and scoped native invited/uninvited /me plus authenticated unknown-path checks are prepared. Default auth remains disabled; live activation acceptance is pending.",
-      "prs": []
+      "prs": [
+        "infra/37"
+      ]
     },
     "S1-16": {
       "status": "in progress",
       "merged": false,
       "notes": "Prepared exact Cognito origin in CloudFront and local CSP, strict header assertions, and no unsafe directives. Public runtime auth settings are validated, uploaded without caching and invalidated with index.html. Paired infra/frontend release and live activation remain pending.",
-      "prs": []
+      "prs": [
+        "infra/37",
+        "frontend/21"
+      ]
     },
     "S1-10": {
       "status": "in progress",
       "merged": false,
       "notes": "Prepared code/PKCE browser flow with state/nonce validation, callback URL cleanup, memory-only tokens, single-flight refresh and revocation plus hosted logout. 401/403 handling clears private cache and routes safely. Unit and intercepted browser tests cover replay, reload, refresh races, logout and denied profiles. Real Google sign-in/sign-out remain pending after activation.",
-      "prs": []
+      "prs": [
+        "frontend/21"
+      ]
     },
     "S1-11": {
       "status": "in progress",
       "merged": false,
       "notes": "Prepared themed signed-out landing, account-name menu, current profile and access-denied views. Serious accessibility checks and browser flows pass. Navigation for future role-specific feature pages and actual dev sign-in acceptance remain pending.",
-      "prs": []
+      "prs": [
+        "frontend/21"
+      ]
     }
   }
 }

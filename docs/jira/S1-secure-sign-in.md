@@ -317,6 +317,8 @@ VPC Lambda trigger connecting as presignup_ro with RDS IAM auth; rejects emails 
 
 Prepared Gateway JWT authorizer with issuer and SPA/dev-only test audiences; exactly one public health route is asserted for enabled environments. No-token release checks and scoped native invited/uninvited /me plus authenticated unknown-path checks are prepared. Default auth remains disabled; live activation acceptance is pending.
 
+Open PRs: [infra #37](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/37).
+
 **Description**
 
 S0 built one route, ANY /api/v1/{proxy+} (lib/app/api.ts), and API Gateway attaches authorizers per route, so protecting the API as it stands also protects /healthz. SEC-03 and the spec's security: [] on /healthz both require the exemption. Split /healthz onto its own unauthenticated route, attach the Cognito JWT authorizer to the proxy route with issuer and audience from the pool, and keep the release gates working: scripts/smoke.sh and the frontend Playwright spec both call /api/v1/healthz and an unknown API path without a token.
@@ -683,6 +685,8 @@ Sign-in is Google only and SEC-07 forbids a backdoor, so if the single admin's G
 
 Prepared exact Cognito origin in CloudFront and local CSP, strict header assertions, and no unsafe directives. Public runtime auth settings are validated, uploaded without caching and invalidated with index.html. Paired infra/frontend release and live activation remain pending.
 
+Open PRs: [infra #37](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/37), [frontend #21](https://github.com/malcolmjefferson/therapy_service_hours_frontend/pull/21).
+
 **Description**
 
 lib/app/web.ts sets connect-src 'self' and says in a comment that S1 adds the Cognito domain. The hosted UI redirect is a top-level navigation and is unaffected, but the PKCE code-for-token POST goes to the hosted UI origin and is blocked by the current policy, silently in the browser, while every header check stays green.
@@ -721,6 +725,8 @@ lib/app/web.ts sets connect-src 'self' and says in a comment that S1 adds the Co
 **Completion / progress**
 
 Prepared code/PKCE browser flow with state/nonce validation, callback URL cleanup, memory-only tokens, single-flight refresh and revocation plus hosted logout. 401/403 handling clears private cache and routes safely. Unit and intercepted browser tests cover replay, reload, refresh races, logout and denied profiles. Real Google sign-in/sign-out remain pending after activation.
+
+Open PRs: [frontend #21](https://github.com/malcolmjefferson/therapy_service_hours_frontend/pull/21).
 
 **Description**
 
@@ -762,6 +768,8 @@ Redirect flow, tokens in memory with refresh, AuthProvider and useAuth, protecte
 **Completion / progress**
 
 Prepared themed signed-out landing, account-name menu, current profile and access-denied views. Serious accessibility checks and browser flows pass. Navigation for future role-specific feature pages and actual dev sign-in acceptance remain pending.
+
+Open PRs: [frontend #21](https://github.com/malcolmjefferson/therapy_service_hours_frontend/pull/21).
 
 **Description**
 
