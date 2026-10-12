@@ -11,7 +11,8 @@ import {
   UserPoolDomain,
   UserPoolIdentityProviderGoogle,
 } from 'aws-cdk-lib/aws-cognito';
-import { CfnOutput, Duration, SecretValue } from 'aws-cdk-lib/core';
+import { CfnOutput, Duration, SecretValue, Stack } from 'aws-cdk-lib/core';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { EnvConfig } from '../../config';
@@ -30,9 +31,11 @@ export class Auth extends Construct {
   readonly hostedUiOrigin: string;
   readonly googleRedirectUri: string;
   readonly userPoolIdOutput: CfnOutput;
+  readonly spaClientIdOutput: CfnOutput;
   readonly testClientIdOutput?: CfnOutput;
   readonly testSecretArnOutput?: CfnOutput;
   readonly testCredentials?: Secret;
+  readonly smokeReaderArnOutput?: CfnOutput;
 
   constructor(scope: Construct, id: string, props: AuthProps) {
     super(scope, id);
@@ -114,6 +117,14 @@ export class Auth extends Construct {
         generateSecretString: { secretStringTemplate: '{}', generateStringKey: 'password', passwordLength: 32, requireEachIncludedType: true },
       });
       this.testSecretArnOutput = new CfnOutput(this, 'TestCredentialsArn', { value: this.testCredentials.secretArn });
+      const stack = Stack.of(this);
+      const reader = new iam.Role(this, 'SmokeReader', {
+        roleName: `${props.prefix}smoke-reader`,
+        assumedBy: new iam.AccountPrincipal(stack.account).withConditions({ ArnEquals: { 'aws:PrincipalArn': stack.formatArn({ service: 'iam', region: '', resource: 'role', resourceName: `${props.prefix}smoke-runner` }) } }),
+      });
+      this.testCredentials.grantRead(reader);
+      reader.addToPolicy(new iam.PolicyStatement({ actions: ['cognito-idp:DescribeUserPoolClient'], resources: [this.userPool.userPoolArn] }));
+      this.smokeReaderArnOutput = new CfnOutput(this, 'SmokeReaderArn', { value: reader.roleArn });
     }
     this.domain = this.userPool.addDomain('Domain', {
       cognitoDomain: { domainPrefix: settings.domainPrefix },
@@ -122,7 +133,7 @@ export class Auth extends Construct {
     this.hostedUiOrigin = this.domain.baseUrl();
     this.googleRedirectUri = `${this.hostedUiOrigin}/oauth2/idpresponse`;
     this.userPoolIdOutput = new CfnOutput(this, 'UserPoolId', { value: this.userPool.userPoolId });
-    new CfnOutput(this, 'SpaClientId', { value: this.spaClient.userPoolClientId });
+    this.spaClientIdOutput = new CfnOutput(this, 'SpaClientId', { value: this.spaClient.userPoolClientId });
     new CfnOutput(this, 'HostedUiOrigin', { value: this.hostedUiOrigin });
     new CfnOutput(this, 'GoogleRedirectUri', { value: this.googleRedirectUri });
   }

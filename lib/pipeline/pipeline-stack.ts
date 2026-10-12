@@ -14,6 +14,7 @@ import { TherapyServiceHoursStage } from '../app-stage';
 import { addMonthlyBudget } from '../app/alerts';
 import { LambdaArtifacts } from '../artifacts';
 import { BudgetGuard } from '../guards/budget-guard';
+import { hostedUiOrigin } from '../app/web';
 
 /** The three GitHub repositories the pipeline releases together (ADR-0005). */
 export const REPOSITORIES = {
@@ -136,7 +137,7 @@ export class PipelineStack extends Stack {
       },
       partialBuildSpec: codebuild.BuildSpec.fromObject({ phases: { install: { 'runtime-versions': { nodejs: '22' } } } }),
       env: { EXPECTED_AWS_ACCOUNT: Aws.ACCOUNT_ID, BACKEND_DIST: 'backend-dist' },
-      commands: ['npm ci', 'npm run typecheck', 'npm test', 'python3 -m unittest discover -s test -p "test_seed_dev.py"', 'npx cdk synth --quiet'],
+      commands: ['npm ci', 'npm run typecheck', 'npm test', 'python3 -m unittest discover -s test -p "test_*.py"', 'npx cdk synth --quiet'],
       primaryOutputDirectory: 'cdk.out',
     });
 
@@ -356,13 +357,18 @@ export class PipelineStack extends Stack {
    */
   private frontendSyncStep(stage: TherapyServiceHoursStage, config: EnvConfig): pipelines.CodeBuildStep {
     const bucketPattern = `arn:${Aws.PARTITION}:s3:::${resourcePrefix(config)}web-*`;
+    const auth = stage.dataStack.auth;
     return new pipelines.CodeBuildStep(`FrontendSync-${config.envName}`, {
       input: this.frontendBuild,
-      envFromCfnOutputs: { BUCKET: stage.webStack.bucketNameOutput, DISTRIBUTION_ID: stage.webStack.distributionIdOutput },
+      additionalInputs: { '../infra': this.sources.infra },
+      env: { AUTH_ENABLED: String(config.auth.enabled), HOSTED_UI_ORIGIN: hostedUiOrigin(config), CALLBACK_URL: config.auth.callbackUrls[0], LOGOUT_URL: config.auth.logoutUrls[0] },
+      envFromCfnOutputs: { BUCKET: stage.webStack.bucketNameOutput, DISTRIBUTION_ID: stage.webStack.distributionIdOutput, URL: stage.webStack.urlOutput, ...(auth ? { SPA_CLIENT_ID: auth.spaClientIdOutput, USER_POOL_ID: auth.userPoolIdOutput } : {}) },
       commands: [
-        'aws s3 sync . "s3://$BUCKET" --delete --exclude index.html --cache-control "public, max-age=31536000, immutable"',
+        'python3 ../infra/scripts/write_auth_config.py',
+        'aws s3 sync . "s3://$BUCKET" --delete --exclude index.html --exclude auth-config.json --cache-control "public, max-age=31536000, immutable"',
+        'aws s3 cp auth-config.json "s3://$BUCKET/auth-config.json" --cache-control "no-store" --content-type "application/json"',
         'aws s3 cp index.html "s3://$BUCKET/index.html" --cache-control "no-cache" --content-type "text/html; charset=utf-8"',
-        'aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths /index.html',
+        'aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths /index.html /auth-config.json',
       ],
       rolePolicyStatements: [
         new iam.PolicyStatement({ actions: ['s3:ListBucket'], resources: [bucketPattern] }),
@@ -380,13 +386,20 @@ export class PipelineStack extends Stack {
    * name and value. The spec comes from the same frontend commit that was just deployed.
    */
   private smokeStep(stage: TherapyServiceHoursStage, config: EnvConfig): pipelines.CodeBuildStep {
+    const auth = stage.dataStack.auth;
+    if (config.envName === 'dev' && config.auth.enabled && (!auth?.testClientIdOutput || !auth.testSecretArnOutput || !auth.smokeReaderArnOutput)) throw new Error('Dev authenticated smoke requires the scoped native-test credential reader');
+    const runner = config.envName === 'dev' ? new iam.Role(this, 'DevSmokeRunner', { roleName: `${resourcePrefix(config)}smoke-runner`, assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com') }) : undefined;
+    runner?.addToPolicy(new iam.PolicyStatement({ actions: ['sts:AssumeRole'], resources: [this.formatArn({ service: 'iam', region: '', resource: 'role', resourceName: `${resourcePrefix(config)}smoke-reader` })] }));
     return new pipelines.CodeBuildStep(`Smoke-${config.envName}`, {
+      role: runner,
       input: this.sources.infra,
       additionalInputs: { '../frontend': this.sources.frontend },
+      env: { AUTH_ENABLED: String(config.auth.enabled), HOSTED_UI_ORIGIN: hostedUiOrigin(config), APP_ENV: config.envName },
       partialBuildSpec: codebuild.BuildSpec.fromObject({ phases: { install: { 'runtime-versions': { nodejs: '22' } } } }),
-      envFromCfnOutputs: { URL: stage.webStack.urlOutput },
+      envFromCfnOutputs: { URL: stage.webStack.urlOutput, ...(auth?.testCredentials && auth.testClientIdOutput && auth.testSecretArnOutput && auth.smokeReaderArnOutput ? { TEST_CLIENT_ID: auth.testClientIdOutput, USER_POOL_ID: auth.userPoolIdOutput, TEST_CREDENTIALS_ARN: auth.testSecretArnOutput, SMOKE_READER_ROLE_ARN: auth.smokeReaderArnOutput } : {}) },
       commands: [
         'bash scripts/smoke.sh "$URL"',
+        'python3 scripts/auth_smoke.py',
         'cd ../frontend',
         'npm ci',
         'npx playwright install --with-deps chromium',

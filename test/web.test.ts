@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { devConfig, prodConfig } from '../config';
-import { CONTENT_SECURITY_POLICY } from '../lib/app/web';
+import { CONTENT_SECURITY_POLICY, contentSecurityPolicy } from '../lib/app/web';
 import { buildStage } from './helpers';
 
 function webTemplate(config = devConfig): Template {
@@ -102,7 +102,7 @@ describe('web (S0-12)', () => {
           ContentTypeOptions: { Override: true },
           FrameOptions: { FrameOption: 'DENY', Override: true },
           ReferrerPolicy: { ReferrerPolicy: 'strict-origin-when-cross-origin', Override: true },
-          ContentSecurityPolicy: { ContentSecurityPolicy: CONTENT_SECURITY_POLICY, Override: true },
+          ContentSecurityPolicy: { ContentSecurityPolicy: contentSecurityPolicy(devConfig), Override: true },
         },
       },
     });

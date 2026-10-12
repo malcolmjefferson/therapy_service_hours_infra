@@ -384,6 +384,40 @@ Test-password rotation is coordinated: changing the managed secret alone leaves 
 passwords unchanged. Update the three fixed synthetic users through the same scoped IAM operator
 using a reviewed operation with captured SDK/CLI input/output. Do not reset arbitrary real users.
 
+## 16. Prepared Gateway and browser sign-in release (S1-14/S1-16/S1-10)
+
+Backend #24 is released in dev execution `af3e6963-7cf5-4857-bfc8-c0a524ba1355`; unauthenticated
+`/api/v1/me` returns a no-store 401 problem. Merge and release the infra preparation before the
+paired frontend because its header gate requires the exact Cognito origin in `connect-src`.
+Both keep `auth.enabled=false`. Do not flip it during either preparation release.
+
+When enabled, `GET /api/v1/healthz` is the only unauthenticated Gateway route. The proxy route
+uses the pool issuer and SPA client audience; dev additionally accepts its test-only client.
+The backend still requires ID-token type and verified identity and reads roles/status from DB.
+The curl gate checks no-token `/me` and unknown paths return 401. The separate dev auth gate
+assumes a read-only smoke credential role, reads the generated test password, authenticates
+the two fixed invited/uninvited native users, checks 200/403 profiles plus authenticated 404,
+and revokes both native refresh tokens. It never prints credentials, token responses or bodies.
+Prod runs no synthetic identity/password checks and requires separate real-identity acceptance.
+
+Frontend sync generates `auth-config.json` from public deployed outputs. Enabled config must
+match the exact configured callback/logout URLs; disabled config contains only `enabled:false`.
+The file is uploaded with no-store and invalidated with index.html. No client secret, native
+password or test credential ARN enters it. The browser rejects unknown fields/foreign URLs.
+
+After both preparation releases, activation is a separate reviewed config change. Verify pool,
+clients, Google mapping, live trigger and seed/native-user creation, then authenticated smoke.
+Demonstrate the owner's actual Google sign-in and logout; verify first binding/accepted invitation
+and repeated sign-in, deactivation and role changes. Local intercepted browser tests prove PKCE
+and UI behavior but do not replace this manual federation or the measured p99 acceptance.
+
+Browser tokens live in memory; only the expiring PKCE state, nonce and verifier use session storage.
+Callback processing consumes that transaction and strips code/error query values before exchange.
+The classic hosted UI reuses its cookie on reload; `prompt=none` is managed-login-only and is not
+sent. Refresh is single-flight; invalidation/logout prevents late responses restoring tokens.
+401/403 clears private query cache. Logout attempts refresh revocation then hosted logout even
+on network failure; local tokens stay cleared, and a failed revocation is not reported as success.
+
 Measured preparation evidence (2026-10-11): the deployed trigger's two `INIT_REPORT` durations
 were 2805.16 and 3057.93 ms; the first synthetic uninvited decision took 66 ms. These are small
 samples of provisioned initialization and a warm database-backed request, not cold/warm p99

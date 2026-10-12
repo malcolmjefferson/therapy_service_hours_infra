@@ -38,6 +38,7 @@ export class AppStack extends Stack {
     });
 
     this.api = new Api(this, 'Api', {
+      auth: props.data.auth,
       config: props.config,
       prefix,
       artifacts: props.artifacts,
