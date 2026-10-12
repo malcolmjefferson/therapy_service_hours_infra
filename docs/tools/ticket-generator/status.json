@@ -320,7 +320,10 @@
       "status": "in review",
       "merged": false,
       "notes": "Additional-admin recovery is verified against PostgreSQL in dev and explicitly opted-in prod: original binding/history preserved, repeat idempotent, missing prod flag makes no writes. Runbook has exact scoped Lambda invocation and failure handling. Owner decided 2026-10-11 to retain the sole dev admin; no additional live identity is seeded. Review/merge remains pending; no live recovery drill is claimed.",
-      "prs": []
+      "prs": [
+        "backend/26",
+        "infra/38"
+      ]
     }
   }
 }

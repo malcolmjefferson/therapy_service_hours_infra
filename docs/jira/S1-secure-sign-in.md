@@ -651,6 +651,8 @@ There is no direct database access in any environment (no bastion, by budget), s
 
 Additional-admin recovery is verified against PostgreSQL in dev and explicitly opted-in prod: original binding/history preserved, repeat idempotent, missing prod flag makes no writes. Runbook has exact scoped Lambda invocation and failure handling. Owner decided 2026-10-11 to retain the sole dev admin; no additional live identity is seeded. Review/merge remains pending; no live recovery drill is claimed.
 
+Open PRs: [backend #26](https://github.com/malcolmjefferson/therapy_service_hours_backend/pull/26), [infra #38](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/38).
+
 **Description**
 
 Sign-in is Google only and SEC-07 forbids a backdoor, so if the single admin's Google account becomes unreachable there is no documented way back in. Record the procedure and make the seed Lambda support it.
