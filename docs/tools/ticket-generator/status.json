@@ -185,8 +185,9 @@
       "status": "in progress",
       "notes": "Pool/Google/client implementation from infra #32 is merged. Dev-only activation is prepared after the successful paired Gateway/browser releases; prod auth/deploy remain disabled. Current Google secret and warmed alias prerequisites are verified. Pool creation and actual Google acceptance remain pending the activation release.",
       "prs": [
-        "infra/32"
-      ]
+        "infra/39"
+      ],
+      "merged": false
     },
     "S1-02": {
       "status": "done",
@@ -201,9 +202,9 @@
       "status": "in progress",
       "notes": "Backend trigger and infra attachment are merged. Latest preflight live alias version 3 is READY at 1/1; synthetic external-provider invited admission passes and uninvited denies SIGN_UP_NOT_ALLOWED. Dev activation is prepared; actual federation and measured p99 remain S1-18 acceptance.",
       "prs": [
-        "backend/22",
-        "infra/33"
-      ]
+        "infra/39"
+      ],
+      "merged": false
     },
     "S1-04": {
       "status": "done",
@@ -243,12 +244,10 @@
     },
     "S1-09": {
       "status": "in progress",
-      "merged": true,
+      "merged": false,
       "notes": "Seed implementation is merged/released with verified DB idempotency. S1-20 recovery support and sole-admin owner decision are complete. Dev activation prepares native fixture/credential creation; those writes and authenticated acceptance await release.",
       "prs": [
-        "backend/23",
-        "infra/35",
-        "infra/36"
+        "infra/39"
       ]
     },
     "S1-06": {
@@ -277,19 +276,18 @@
     },
     "S1-14": {
       "status": "in progress",
-      "merged": true,
+      "merged": false,
       "notes": "Gateway implementation from infra #37 is merged/released. Dev activation is prepared with exactly one public health route, issuer/SPA+dev-test audiences and scoped native token checks. Live authenticated Gateway acceptance awaits the activation release.",
       "prs": [
-        "infra/37"
+        "infra/39"
       ]
     },
     "S1-16": {
       "status": "in progress",
-      "merged": true,
+      "merged": false,
       "notes": "Exact Cognito CSP and public runtime config from infra #37/frontend #21 are merged/released. Activation switches dev runtime config to deployed pool/client outputs with no-store; prod remains disabled. Live enabled acceptance awaits release.",
       "prs": [
-        "infra/37",
-        "frontend/21"
+        "infra/39"
       ]
     },
     "S1-10": {

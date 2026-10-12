@@ -195,7 +195,7 @@ Extend the S0-08 role bootstrap with a third IAM role, presignup_ro, that may on
 
 Pool/Google/client implementation from infra #32 is merged. Dev-only activation is prepared after the successful paired Gateway/browser releases; prod auth/deploy remain disabled. Current Google secret and warmed alias prerequisites are verified. Pool creation and actual Google acceptance remain pending the activation release.
 
-Merged PRs: [infra #32](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/32).
+Open PRs: [infra #39](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/39).
 
 **Description**
 
@@ -213,7 +213,7 @@ CDK auth construct in the data stack (ADR-0009, the pool is stateful): user pool
 
 **Definition of Done**
 
-- [x] Implementation merged
+- [ ] Implementation merged
 - [ ] Validation: automated tests (and manual steps where noted) pass
 - [ ] Documentation: reviewer verification steps in the PR; OpenAPI/CLAUDE.md updated if a contract changed
 
@@ -273,7 +273,7 @@ Second half of the spike, once the pool exists. Prove on dev what ADR-0007 and A
 
 Backend trigger and infra attachment are merged. Latest preflight live alias version 3 is READY at 1/1; synthetic external-provider invited admission passes and uninvited denies SIGN_UP_NOT_ALLOWED. Dev activation is prepared; actual federation and measured p99 remain S1-18 acceptance.
 
-Merged PRs: [backend #22](https://github.com/malcolmjefferson/therapy_service_hours_backend/pull/22), [infra #33](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/33).
+Open PRs: [infra #39](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/39).
 
 **Description**
 
@@ -291,7 +291,7 @@ VPC Lambda trigger connecting as presignup_ro with RDS IAM auth; rejects emails 
 
 **Definition of Done**
 
-- [x] Implementation merged
+- [ ] Implementation merged
 - [ ] Validation: automated tests (and manual steps where noted) pass
 - [ ] Documentation: reviewer verification steps in the PR; OpenAPI/CLAUDE.md updated if a contract changed
 
@@ -317,7 +317,7 @@ VPC Lambda trigger connecting as presignup_ro with RDS IAM auth; rejects emails 
 
 Gateway implementation from infra #37 is merged/released. Dev activation is prepared with exactly one public health route, issuer/SPA+dev-test audiences and scoped native token checks. Live authenticated Gateway acceptance awaits the activation release.
 
-Merged PRs: [infra #37](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/37).
+Open PRs: [infra #39](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/39).
 
 **Description**
 
@@ -334,7 +334,7 @@ S0 built one route, ANY /api/v1/{proxy+} (lib/app/api.ts), and API Gateway attac
 
 **Definition of Done**
 
-- [x] Implementation merged
+- [ ] Implementation merged
 - [ ] Validation: automated tests (and manual steps where noted) pass
 - [ ] Documentation: reviewer verification steps in the PR; OpenAPI/CLAUDE.md updated if a contract changed
 
@@ -608,7 +608,7 @@ Returns the current user's profile, roles and organization via a dedicated DTO.
 
 Seed implementation is merged/released with verified DB idempotency. S1-20 recovery support and sole-admin owner decision are complete. Dev activation prepares native fixture/credential creation; those writes and authenticated acceptance await release.
 
-Merged PRs: [backend #23](https://github.com/malcolmjefferson/therapy_service_hours_backend/pull/23), [infra #35](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/35), [infra #36](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/36).
+Open PRs: [infra #39](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/39).
 
 **Description**
 
@@ -625,7 +625,7 @@ There is no direct database access in any environment (no bastion, by budget), s
 
 **Definition of Done**
 
-- [x] Implementation merged
+- [ ] Implementation merged
 - [ ] Validation: automated tests (and manual steps where noted) pass
 - [ ] Documentation: reviewer verification steps in the PR; OpenAPI/CLAUDE.md updated if a contract changed
 
@@ -691,7 +691,7 @@ Sign-in is Google only and SEC-07 forbids a backdoor, so if the single admin's G
 
 Exact Cognito CSP and public runtime config from infra #37/frontend #21 are merged/released. Activation switches dev runtime config to deployed pool/client outputs with no-store; prod remains disabled. Live enabled acceptance awaits release.
 
-Merged PRs: [infra #37](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/37), [frontend #21](https://github.com/malcolmjefferson/therapy_service_hours_frontend/pull/21).
+Open PRs: [infra #39](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/39).
 
 **Description**
 
@@ -706,7 +706,7 @@ lib/app/web.ts sets connect-src 'self' and says in a comment that S1 adds the Co
 
 **Definition of Done**
 
-- [x] Implementation merged
+- [ ] Implementation merged
 - [ ] Validation: automated tests (and manual steps where noted) pass
 - [ ] Documentation: reviewer verification steps in the PR; OpenAPI/CLAUDE.md updated if a contract changed
 
