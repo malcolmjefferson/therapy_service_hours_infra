@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 
 /** The Go Lambdas the backend repo builds (one binary per `cmd/<name>`, ARC-05). */
-export type BackendLambda = 'api' | 'migrate' | 'dbbootstrap' | 'dbbootstrap-provider' | 'presignup';
+export type BackendLambda = 'api' | 'migrate' | 'dbbootstrap' | 'dbbootstrap-provider' | 'presignup' | 'seed';
 
 /** Supplies Lambda code to the stacks. */
 export interface LambdaArtifacts {

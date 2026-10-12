@@ -17,9 +17,9 @@ An invited Google account signs in and sees its name and role-based navigation; 
 
 ## Execution status (2026-10-11)
 
-**6 done** · **2 in progress** · **0 in review** · **12 not started**
+**6 done** · **3 in progress** · **0 in review** · **11 not started**
 
-The accepted plan contains 20 tickets. ADR-0008–0011 are owner-approved; the identity schema, restricted database role, claims adapter and paired /me contracts are released. The invitation trigger is deployed with its live alias READY at provisioned concurrency 1/1 and a verified synthetic uninvited denial. Cognito remains disabled. Google scope review, pool activation, actual Google federation, measured cold/warm p99, actor authorization, seeding and the frontend sign-in flow remain outstanding.
+The accepted plan contains 20 tickets. ADR-0008–0011 are owner-approved; the identity schema, restricted database role, claims adapter and paired /me contracts are released. The invitation trigger is deployed with its live alias READY at provisioned concurrency 1/1 and a verified synthetic uninvited denial. Cognito remains disabled. Google scopes and External/Testing audience are verified. Pool activation, actual Google federation, measured cold/warm p99, actor authorization, seeding and the frontend sign-in flow remain outstanding.
 
 **Status legend:** done = merged implementation; in progress = partial implementation or remaining acceptance; in review = open PR; not started = implementation has not begun. Completion notes distinguish dev verification from deferred prod/manual acceptance. Acceptance checkboxes are not automatically checked from merge status.
 
@@ -40,7 +40,7 @@ The accepted plan contains 20 tickets. ADR-0008–0011 are owner-approved; the i
 | [S1-06](#s1-06) | Story | Auth middleware: claims to actor, user lookup, sub binding, deactivated check | 2 | S1-04, S1-05, S1-14, S1-15, S0-09 | not started |
 | [S1-07](#s1-07) | Story | internal/authz policy framework | 1.5 | S1-06 | not started |
 | [S1-08](#s1-08) | Story | GET /me endpoint | 1 | S1-06, S1-07 | not started |
-| [S1-09](#s1-09) | Task | Seed Lambda: first admin, Default Organization and dev test users | 1 | S1-04, S1-01 | not started |
+| [S1-09](#s1-09) | Task | Seed Lambda: first admin, Default Organization and dev test users | 1 | S1-04, S1-01 | in progress |
 | [S1-20](#s1-20) | Task | Break-glass admin recovery runbook entry | 0.5 | S1-09 | not started |
 | [S1-16](#s1-16) | Task | CSP connect-src for the Cognito hosted UI domain | 0.5 | S1-01 | not started |
 | [S1-10](#s1-10) | Story | Frontend auth: Cognito hosted UI (code + PKCE), AuthProvider, route guards | 2 | S1-01, S1-08, S1-16, S0-19 | not started |
@@ -193,7 +193,7 @@ Extend the S0-08 role bootstrap with a third IAM role, presignup_ro, that may on
 
 **Completion / progress**
 
-Cognito pool, Google IdP, clients and typed configuration are merged and synth-tested. The dev secret, matching Google client ID and saved redirect URI were verified. Auth is disabled and no pool is deployed; scope review, activation and live federation verification remain.
+Cognito pool, Google IdP, clients and typed configuration are merged and synth-tested. The dev secret, matching Google client ID and saved redirect URI were verified. Read-only review verified the three basic identity scopes and External/Testing audience. Auth is disabled and no pool is deployed; activation and live federation verification remain.
 
 Merged PRs: [infra #32](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/32).
 
@@ -271,7 +271,7 @@ Second half of the spike, once the pool exists. Prove on dev what ADR-0007 and A
 
 **Completion / progress**
 
-Backend and infra are merged and released in dev execution 7c97ec40-371c-4387-8c26-817c75450d4c. The arm64 live alias is READY with reserved concurrency 1 and provisioned concurrency 1/1. A synthetic uninvited Google event returned SIGN_UP_NOT_ALLOWED; the decision log had only safe fields and no email. Policy and PostgreSQL tests pass. The single 66 ms sample is not p99 proof; actual federated acceptance and measured cold/warm p99 remain. The pipeline build-list bootstrap issue was repaired before release.
+Backend and infra are merged and released in dev execution 7c97ec40-371c-4387-8c26-817c75450d4c. The arm64 live alias is READY with reserved concurrency 1 and provisioned concurrency 1/1. A synthetic uninvited Google event returned SIGN_UP_NOT_ALLOWED; the decision log had only safe fields and no email. Policy and PostgreSQL tests pass. The single 66 ms sample is not p99 proof; actual federated acceptance and measured cold/warm p99 remain. The pipeline build-list bootstrap issue was repaired before release. Two provisioned cold initialization samples were 2805.16 and 3057.93 ms; these small samples do not establish p99.
 
 Merged PRs: [backend #22](https://github.com/malcolmjefferson/therapy_service_hours_backend/pull/22), [infra #33](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/33).
 
@@ -578,7 +578,13 @@ Returns the current user's profile, roles and organization via a dedicated DTO.
 | Stories | US-46 |
 | Is blocked by | S1-04, S1-01 |
 | Blocks | S1-20, S1-13 |
-| Status (2026-10-11) | not started |
+| Status (2026-10-11) | in progress |
+
+**Completion / progress**
+
+Started as the prerequisite for S1-01/S1-03 activation and admission acceptance. The backend seed service and paired infra dev step are prepared and locally tested: operator-only requests, production guards, transaction rollback, idempotency and safe logs. The owner selected the first dev admin. Auth remains disabled. Release build-discovery before backend seed, then infra; live seed rerun and admission verification remain pending.
+
+Open PRs: [backend #23](https://github.com/malcolmjefferson/therapy_service_hours_backend/pull/23), [infra #35](https://github.com/malcolmjefferson/therapy_service_hours_infra/pull/35).
 
 **Description**
 

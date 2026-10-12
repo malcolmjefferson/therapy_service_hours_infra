@@ -168,6 +168,7 @@ describe('release pipeline (S0-14, ADR-0005)', () => {
       'therapy-service-hours-dev-data.Deploy',
       'therapy-service-hours-dev-data.Migrate-dev',
       'therapy-service-hours-dev-app.Deploy',
+      'therapy-service-hours-dev-app.Seed-dev',
       'therapy-service-hours-dev-web.Deploy',
       'therapy-service-hours-dev-web.FrontendSync-dev',
       'Smoke-dev',

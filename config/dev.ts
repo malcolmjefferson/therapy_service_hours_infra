@@ -8,6 +8,7 @@ export const devConfig: EnvConfig = {
   region: APP_REGION,
   availabilityZones: ['us-west-2a', 'us-west-2b'],
   owner: 'malcolmjefferson',
+  seed: { onDeploy: true, adminEmail: 'malcolmj0415@gmail.com', includeDevUsers: true, reservedConcurrency: 1 },
   logRetention: RetentionDays.TWO_WEEKS,
   auth: {
     enabled: false, // Google secret and S1-03 trigger must exist before activation.

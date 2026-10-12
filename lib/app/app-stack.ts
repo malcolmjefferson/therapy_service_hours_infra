@@ -7,6 +7,7 @@ import { ALARM_PERIOD, ALARM_THRESHOLDS } from './alerts';
 import { Api } from './api';
 import { DataStack } from './data-stack';
 import { PreSignUp } from './presignup';
+import { Seed } from './seed';
 
 /** Props for {@link AppStack}. */
 export interface AppStackProps extends StackProps {
@@ -22,10 +23,13 @@ export interface AppStackProps extends StackProps {
 export class AppStack extends Stack {
   readonly api: Api;
   readonly preSignUp: PreSignUp;
+  readonly seed: Seed;
 
   constructor(scope: Construct, id: string, props: AppStackProps) {
     super(scope, id, props);
     const prefix = resourcePrefix(props.config);
+
+    this.seed = new Seed(this, 'Seed', { config: props.config, prefix, artifacts: props.artifacts, vpc: props.data.network.vpc, securityGroup: props.data.network.appSecurityGroup, database: props.data.database.instance, auth: props.data.auth });
 
     this.preSignUp = new PreSignUp(this, 'PreSignUp', {
       config: props.config, prefix, artifacts: props.artifacts,

@@ -29,9 +29,18 @@ export interface EnvConfig {
   readonly logRetention: RetentionDays;
   readonly database: DatabaseSettings;
   readonly auth: AuthSettings;
+  readonly seed: SeedSettings;
   readonly api: ApiSettings;
   readonly web: WebSettings;
   readonly alerts: AlertSettings;
+}
+
+/** Operator identity bootstrap; production is invoked explicitly, never automatically. */
+export interface SeedSettings {
+  readonly onDeploy: boolean;
+  readonly adminEmail?: string;
+  readonly includeDevUsers: boolean;
+  readonly reservedConcurrency: number;
 }
 
 /** Cognito settings (ADR-0009). Only secret references, never credential values. */

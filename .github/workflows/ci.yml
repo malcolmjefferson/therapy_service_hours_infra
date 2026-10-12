@@ -34,5 +34,7 @@ jobs:
         run: npm run typecheck
       - name: CDK assertion tests (ARC-34)
         run: npm test
+      - name: Dev identity seed safety tests
+        run: python3 -m unittest discover -s test -p 'test_seed_dev.py'
       - name: Synth dev and prod, including the budget guard (ARC-29)
         run: npm run synth

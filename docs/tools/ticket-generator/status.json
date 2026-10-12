@@ -2,37 +2,253 @@
   "updated": "2026-10-11",
   "slices": {
     "S0": "All 21 implementation tickets are merged. Dev delivery is verified by successful pipeline executions, including release `7c97ec40-371c-4387-8c26-817c75450d4c` (data, migration, app, web, frontend sync and smoke). The owner deferred production deployment to M3; production execution, the recorded/manual failure-injection demo and SNS email receipt are not claimed by this update.",
-    "S1": "The accepted plan contains 20 tickets. ADR-0008–0011 are owner-approved; the identity schema, restricted database role, claims adapter and paired /me contracts are released. The invitation trigger is deployed with its live alias READY at provisioned concurrency 1/1 and a verified synthetic uninvited denial. Cognito remains disabled. Google scope review, pool activation, actual Google federation, measured cold/warm p99, actor authorization, seeding and the frontend sign-in flow remain outstanding."
+    "S1": "The accepted plan contains 20 tickets. ADR-0008–0011 are owner-approved; the identity schema, restricted database role, claims adapter and paired /me contracts are released. The invitation trigger is deployed with its live alias READY at provisioned concurrency 1/1 and a verified synthetic uninvited denial. Cognito remains disabled. Google scopes and External/Testing audience are verified. Pool activation, actual Google federation, measured cold/warm p99, actor authorization, seeding and the frontend sign-in flow remain outstanding."
   },
   "tickets": {
-    "S0-01": {"status": "done", "notes": "Three public repositories, scaffolding and owner-enabled branch protection are complete. Public repository visibility is the accepted owner decision.", "prs": ["backend/1", "frontend/1", "infra/1"]},
-    "S0-02": {"status": "done", "notes": "Accepted ADR-0001–0006 and owner decisions are reflected in the shared specification.", "prs": ["backend/6", "frontend/3", "infra/4"]},
-    "S0-03": {"status": "done", "notes": "Go API skeleton and health endpoint are merged and released to dev.", "prs": ["backend/2"]},
-    "S0-04": {"status": "done", "notes": "OpenAPI server generation, lint and breaking-change gates are merged.", "prs": ["backend/3"]},
-    "S0-05": {"status": "done", "notes": "CDK stacks, typed environment configuration and tagging assertions are merged.", "prs": ["infra/2"]},
-    "S0-06": {"status": "done", "notes": "Budget guard assertions are merged and pass during synthesis.", "prs": ["infra/3"]},
-    "S0-07": {"status": "done", "notes": "Private dev network and IAM-enabled RDS are deployed. PostgreSQL minor upgrades are pinned; prod deployment is deferred to M3.", "prs": ["infra/6", "infra/24"]},
-    "S0-08": {"status": "done", "notes": "Role bootstrap provider and worker are deployed and idempotent. Deployment-time credential handling and non-superuser/log-group fixes are merged.", "prs": ["backend/8", "backend/10", "backend/11", "backend/13", "infra/7", "infra/11", "infra/21"]},
-    "S0-09": {"status": "done", "notes": "pgx pooling, IAM token refresh and verified TLS are released; first-connect timeout correction is merged.", "prs": ["backend/4", "backend/15"]},
-    "S0-10": {"status": "done", "notes": "Embedded goose migration Lambda is deployed and successful in dev releases; first-connection retry is merged.", "prs": ["backend/7", "backend/15"]},
-    "S0-11": {"status": "done", "notes": "HTTP API and Go API Lambda are deployed to dev. Cognito route protection is later S1-14 work.", "prs": ["infra/12"]},
-    "S0-12": {"status": "done", "notes": "S3/OAC, CloudFront API routing, SPA rewrite and response headers are deployed and smoke-tested on dev.", "prs": ["infra/13"]},
-    "S0-13": {"status": "done", "notes": "React/Vite skeleton, routing, query provider, theme and Status page are merged and served by the dev release.", "prs": ["frontend/2"]},
-    "S0-14": {"status": "done", "notes": "The three-source pipeline builds and releases merged commits. Push-trigger repair is complete.", "prs": ["infra/16", "infra/26"]},
-    "S0-15": {"status": "done", "notes": "Dev data → migration → app → web → frontend sync → smoke completed successfully. Concurrency preflight is deployed.", "prs": ["infra/17", "infra/27"]},
-    "S0-16": {"status": "done", "notes": "Approval, snapshot, promotion and notification implementation is merged and tested. RELEASE.deployProd stays false by owner decision until M3; no live prod promotion or snapshot drill is claimed.", "prs": ["infra/18", "infra/23", "infra/27", "infra/28"]},
-    "S0-17": {"status": "done", "notes": "Repository quality/security gates and Dependabot are merged. npm audit runs on PRs and weekly rather than blocking release builds.", "prs": ["backend/5", "frontend/4", "frontend/10", "frontend/16", "infra/5", "infra/9", "infra/25"]},
-    "S0-18": {"status": "done", "notes": "Alerts and the $50 account budget are deployed; the budget is owned by the active pipeline stack. Owner SNS subscription confirmation and email receipt are not independently verified here.", "prs": ["infra/14", "infra/28"]},
-    "S0-19": {"status": "done", "notes": "Pinned OpenAPI sync and drift gates are merged and pass in successful releases.", "prs": ["frontend/5", "infra/16"]},
-    "S0-20": {"status": "done", "notes": "Playwright smoke and header scan are merged and pass in the dev pipeline.", "prs": ["frontend/13", "infra/19"]},
-    "S0-21": {"status": "done", "notes": "Repository quick-start documentation and infra runbook are merged. Restore rehearsals remain later hardening work.", "prs": ["backend/12", "frontend/14", "infra/20"]},
-    "S1-01": {"status": "in progress", "notes": "Cognito pool, Google IdP, clients and typed configuration are merged and synth-tested. The dev secret, matching Google client ID and saved redirect URI were verified. Auth is disabled and no pool is deployed; scope review, activation and live federation verification remain.", "prs": ["infra/32"]},
-    "S1-02": {"status": "done", "notes": "Owner accepted ADR-0008–0011 on 2026-10-11; decisions are merged in all three repositories. Live binding and latency proof are separate S1-18 acceptance work.", "prs": ["backend/17", "frontend/18", "infra/30"]},
-    "S1-03": {"status": "in progress", "notes": "Backend and infra are merged and released in dev execution 7c97ec40-371c-4387-8c26-817c75450d4c. The arm64 live alias is READY with reserved concurrency 1 and provisioned concurrency 1/1. A synthetic uninvited Google event returned SIGN_UP_NOT_ALLOWED; the decision log had only safe fields and no email. Policy and PostgreSQL tests pass. The single 66 ms sample is not p99 proof; actual federated acceptance and measured cold/warm p99 remain. The pipeline build-list bootstrap issue was repaired before release.", "prs": ["backend/22", "infra/33"]},
-    "S1-04": {"status": "done", "notes": "Identity migration and sqlc lookups are merged and applied on dev; PostgreSQL lifecycle, uniqueness and idempotency tests pass.", "prs": ["backend/20"]},
-    "S1-05": {"status": "done", "notes": "The /me contract and shared auth Problem responses are merged and released with frontend S1-19. The real /me endpoint remains S1-08.", "prs": ["backend/19"]},
-    "S1-15": {"status": "done", "notes": "Trusted authorizer claims are carried through the Lambda adapter and released to dev. Protected-route integration remains S1-06/S1-14.", "prs": ["backend/18"]},
-    "S1-17": {"status": "done", "notes": "presignup_ro bootstrap and exact SELECT grants on users/invitations are merged and deployed. Negative privilege tests cover writes and unrelated future tables; the deployed trigger uses its scoped IAM connection.", "prs": ["backend/21", "infra/31"]},
-    "S1-19": {"status": "done", "notes": "Frontend /me spec, generated types and test handler are merged and released with backend S1-05. The API drift gate and frontend tests pass; real endpoint/auth UI work remains S1-08/S1-10.", "prs": ["frontend/19"]}
+    "S0-01": {
+      "status": "done",
+      "notes": "Three public repositories, scaffolding and owner-enabled branch protection are complete. Public repository visibility is the accepted owner decision.",
+      "prs": [
+        "backend/1",
+        "frontend/1",
+        "infra/1"
+      ]
+    },
+    "S0-02": {
+      "status": "done",
+      "notes": "Accepted ADR-0001–0006 and owner decisions are reflected in the shared specification.",
+      "prs": [
+        "backend/6",
+        "frontend/3",
+        "infra/4"
+      ]
+    },
+    "S0-03": {
+      "status": "done",
+      "notes": "Go API skeleton and health endpoint are merged and released to dev.",
+      "prs": [
+        "backend/2"
+      ]
+    },
+    "S0-04": {
+      "status": "done",
+      "notes": "OpenAPI server generation, lint and breaking-change gates are merged.",
+      "prs": [
+        "backend/3"
+      ]
+    },
+    "S0-05": {
+      "status": "done",
+      "notes": "CDK stacks, typed environment configuration and tagging assertions are merged.",
+      "prs": [
+        "infra/2"
+      ]
+    },
+    "S0-06": {
+      "status": "done",
+      "notes": "Budget guard assertions are merged and pass during synthesis.",
+      "prs": [
+        "infra/3"
+      ]
+    },
+    "S0-07": {
+      "status": "done",
+      "notes": "Private dev network and IAM-enabled RDS are deployed. PostgreSQL minor upgrades are pinned; prod deployment is deferred to M3.",
+      "prs": [
+        "infra/6",
+        "infra/24"
+      ]
+    },
+    "S0-08": {
+      "status": "done",
+      "notes": "Role bootstrap provider and worker are deployed and idempotent. Deployment-time credential handling and non-superuser/log-group fixes are merged.",
+      "prs": [
+        "backend/8",
+        "backend/10",
+        "backend/11",
+        "backend/13",
+        "infra/7",
+        "infra/11",
+        "infra/21"
+      ]
+    },
+    "S0-09": {
+      "status": "done",
+      "notes": "pgx pooling, IAM token refresh and verified TLS are released; first-connect timeout correction is merged.",
+      "prs": [
+        "backend/4",
+        "backend/15"
+      ]
+    },
+    "S0-10": {
+      "status": "done",
+      "notes": "Embedded goose migration Lambda is deployed and successful in dev releases; first-connection retry is merged.",
+      "prs": [
+        "backend/7",
+        "backend/15"
+      ]
+    },
+    "S0-11": {
+      "status": "done",
+      "notes": "HTTP API and Go API Lambda are deployed to dev. Cognito route protection is later S1-14 work.",
+      "prs": [
+        "infra/12"
+      ]
+    },
+    "S0-12": {
+      "status": "done",
+      "notes": "S3/OAC, CloudFront API routing, SPA rewrite and response headers are deployed and smoke-tested on dev.",
+      "prs": [
+        "infra/13"
+      ]
+    },
+    "S0-13": {
+      "status": "done",
+      "notes": "React/Vite skeleton, routing, query provider, theme and Status page are merged and served by the dev release.",
+      "prs": [
+        "frontend/2"
+      ]
+    },
+    "S0-14": {
+      "status": "done",
+      "notes": "The three-source pipeline builds and releases merged commits. Push-trigger repair is complete.",
+      "prs": [
+        "infra/16",
+        "infra/26"
+      ]
+    },
+    "S0-15": {
+      "status": "done",
+      "notes": "Dev data → migration → app → web → frontend sync → smoke completed successfully. Concurrency preflight is deployed.",
+      "prs": [
+        "infra/17",
+        "infra/27"
+      ]
+    },
+    "S0-16": {
+      "status": "done",
+      "notes": "Approval, snapshot, promotion and notification implementation is merged and tested. RELEASE.deployProd stays false by owner decision until M3; no live prod promotion or snapshot drill is claimed.",
+      "prs": [
+        "infra/18",
+        "infra/23",
+        "infra/27",
+        "infra/28"
+      ]
+    },
+    "S0-17": {
+      "status": "done",
+      "notes": "Repository quality/security gates and Dependabot are merged. npm audit runs on PRs and weekly rather than blocking release builds.",
+      "prs": [
+        "backend/5",
+        "frontend/4",
+        "frontend/10",
+        "frontend/16",
+        "infra/5",
+        "infra/9",
+        "infra/25"
+      ]
+    },
+    "S0-18": {
+      "status": "done",
+      "notes": "Alerts and the $50 account budget are deployed; the budget is owned by the active pipeline stack. Owner SNS subscription confirmation and email receipt are not independently verified here.",
+      "prs": [
+        "infra/14",
+        "infra/28"
+      ]
+    },
+    "S0-19": {
+      "status": "done",
+      "notes": "Pinned OpenAPI sync and drift gates are merged and pass in successful releases.",
+      "prs": [
+        "frontend/5",
+        "infra/16"
+      ]
+    },
+    "S0-20": {
+      "status": "done",
+      "notes": "Playwright smoke and header scan are merged and pass in the dev pipeline.",
+      "prs": [
+        "frontend/13",
+        "infra/19"
+      ]
+    },
+    "S0-21": {
+      "status": "done",
+      "notes": "Repository quick-start documentation and infra runbook are merged. Restore rehearsals remain later hardening work.",
+      "prs": [
+        "backend/12",
+        "frontend/14",
+        "infra/20"
+      ]
+    },
+    "S1-01": {
+      "status": "in progress",
+      "notes": "Cognito pool, Google IdP, clients and typed configuration are merged and synth-tested. The dev secret, matching Google client ID and saved redirect URI were verified. Read-only review verified the three basic identity scopes and External/Testing audience. Auth is disabled and no pool is deployed; activation and live federation verification remain.",
+      "prs": [
+        "infra/32"
+      ]
+    },
+    "S1-02": {
+      "status": "done",
+      "notes": "Owner accepted ADR-0008–0011 on 2026-10-11; decisions are merged in all three repositories. Live binding and latency proof are separate S1-18 acceptance work.",
+      "prs": [
+        "backend/17",
+        "frontend/18",
+        "infra/30"
+      ]
+    },
+    "S1-03": {
+      "status": "in progress",
+      "notes": "Backend and infra are merged and released in dev execution 7c97ec40-371c-4387-8c26-817c75450d4c. The arm64 live alias is READY with reserved concurrency 1 and provisioned concurrency 1/1. A synthetic uninvited Google event returned SIGN_UP_NOT_ALLOWED; the decision log had only safe fields and no email. Policy and PostgreSQL tests pass. The single 66 ms sample is not p99 proof; actual federated acceptance and measured cold/warm p99 remain. The pipeline build-list bootstrap issue was repaired before release. Two provisioned cold initialization samples were 2805.16 and 3057.93 ms; these small samples do not establish p99.",
+      "prs": [
+        "backend/22",
+        "infra/33"
+      ]
+    },
+    "S1-04": {
+      "status": "done",
+      "notes": "Identity migration and sqlc lookups are merged and applied on dev; PostgreSQL lifecycle, uniqueness and idempotency tests pass.",
+      "prs": [
+        "backend/20"
+      ]
+    },
+    "S1-05": {
+      "status": "done",
+      "notes": "The /me contract and shared auth Problem responses are merged and released with frontend S1-19. The real /me endpoint remains S1-08.",
+      "prs": [
+        "backend/19"
+      ]
+    },
+    "S1-15": {
+      "status": "done",
+      "notes": "Trusted authorizer claims are carried through the Lambda adapter and released to dev. Protected-route integration remains S1-06/S1-14.",
+      "prs": [
+        "backend/18"
+      ]
+    },
+    "S1-17": {
+      "status": "done",
+      "notes": "presignup_ro bootstrap and exact SELECT grants on users/invitations are merged and deployed. Negative privilege tests cover writes and unrelated future tables; the deployed trigger uses its scoped IAM connection.",
+      "prs": [
+        "backend/21",
+        "infra/31"
+      ]
+    },
+    "S1-19": {
+      "status": "done",
+      "notes": "Frontend /me spec, generated types and test handler are merged and released with backend S1-05. The API drift gate and frontend tests pass; real endpoint/auth UI work remains S1-08/S1-10.",
+      "prs": [
+        "frontend/19"
+      ]
+    },
+    "S1-09": {
+      "status": "in progress",
+      "merged": false,
+      "notes": "Started as the prerequisite for S1-01/S1-03 activation and admission acceptance. The backend seed service and paired infra dev step are prepared and locally tested: operator-only requests, production guards, transaction rollback, idempotency and safe logs. The owner selected the first dev admin. Auth remains disabled. Release build-discovery before backend seed, then infra; live seed rerun and admission verification remain pending.",
+      "prs": [
+        "backend/23",
+        "infra/35"
+      ]
+    }
   }
 }
