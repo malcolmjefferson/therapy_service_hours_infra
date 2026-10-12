@@ -354,6 +354,15 @@ Their generated dev password is shared in one managed secret and never printed o
 command arguments. Confirmed identities/passwords and expected groups remain unchanged on rerun;
 partial creation completes safely, while disabled users or unexpected groups cause refusal.
 
+The Lambda invocation uses explicit `--function-name` and `--payload fileb://...` arguments;
+the payload stays in a temporary file with owner-only permissions. Unlike the generic STS,
+Cognito and Secrets Manager commands, Lambda's custom CLI command does not support the
+`--cli-input-json` wrapper. If `Seed-dev` reports `SEED_AWS_CALL_FAILED` before any Lambda
+logs appear, check command parsing as well as IAM. The initial 2026-10-11 release hit this
+parsing error after successfully assuming the operator role and made no database writes.
+After merging the invocation repair, let the new source release run; retrying the old failed
+execution would reuse the broken script. Check counts-only seed output before moving on.
+
 After release, run the seed again through the authorized pipeline/operator path and verify zero
 new accounts/invitations. Invoke `presignup:live` with synthetic Google events: test-invited and
 test-supervisor should pass; test-uninvited should return `SIGN_UP_NOT_ALLOWED`. Invoking the
