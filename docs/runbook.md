@@ -234,7 +234,9 @@ Current CAs expire in 2061 (RSA2048) and 2121 (RSA4096, ECC384).
 
 ## 12. First-admin recovery
 
-Comes with S1 (Cognito and the first-admin seed). Until then there are no application users.
+See [additional admin and Google-account recovery](#17-additional-admin-and-google-account-recovery-s1-20).
+The owner elected to retain the sole dev admin; the reviewed seed supports adding an authorized
+second identity without altering the original account.
 
 ## 13. S1 identity foundation release
 
@@ -304,14 +306,15 @@ activation remains M3 and needs the same alias preparation before pool creation.
 ### Pool replacement recovery
 
 Follow [Google OAuth setup](google-oauth-setup.md) for the two redirect URLs, secret references,
-feature plan/cost and activation prerequisites. Cognito is disabled in both environments
-until the Google credentials and invitation allowlist attachment exist.
+feature plan/cost and activation prerequisites. Dev is enabled by the separate activation
+change after those prerequisites and the paired browser/Gateway release; prod stays disabled.
 
 The production pool lives in the **data stack**, has deletion protection and is retained on
 delete/replacement (ADR-0009). Replacing it changes every Cognito subject and invalidates
 existing `users.cognito_sub` bindings. Rebinding must preserve internal user IDs and all
 user-owned data. This recovery procedure requires the S1-06 binding path and S1-09 seed/recovery
-tool; neither is implemented in this preparation, so it is **not yet an executable drill**.
+tool. Binding and additional-admin seed paths are implemented; a reviewed binding-reset operation
+and the live recovery rehearsal are still required, so this is **not yet an executable drill**.
 
 1. Schedule a sign-in maintenance window; retain the old pool and take an RDS recovery point.
    Save the old pool/client/domain configuration and the affected internal user IDs for rollback.
@@ -389,7 +392,7 @@ using a reviewed operation with captured SDK/CLI input/output. Do not reset arbi
 Backend #24 is released in dev execution `af3e6963-7cf5-4857-bfc8-c0a524ba1355`; unauthenticated
 `/api/v1/me` returns a no-store 401 problem. Merge and release the infra preparation before the
 paired frontend because its header gate requires the exact Cognito origin in `connect-src`.
-Both keep `auth.enabled=false`. Do not flip it during either preparation release.
+Both preparation releases kept `auth.enabled=false`. Activation follows in section 18.
 
 When enabled, `GET /api/v1/healthz` is the only unauthenticated Gateway route. The proxy route
 uses the pool issuer and SPA client audience; dev additionally accepts its test-only client.
@@ -510,3 +513,43 @@ Regression verification lives in backend `internal/migrate/admin_recovery_test.g
 tests add and bind a separate admin in dev and explicitly opted-in prod, preserve the original
 bound account and invitation history, confirm repeat idempotency, and prove prod refusal makes
 no database changes. These use fictional identities and do not claim a live recovery drill.
+
+## 18. Dev auth activation and acceptance
+
+The activation change enables only `config/dev.ts` auth. Production auth and
+`RELEASE.deployProd` remain false. Backend identity and the paired Gateway/browser preparation
+are released; S1-20's owner decision keeps the sole real dev admin. Preflight on 2026-10-11
+confirmed the Google secret has AWSCURRENT, the pre-sign-up alias is READY at 1/1, and direct
+synthetic Google events allow test-invited and deny test-uninvited with `SIGN_UP_NOT_ALLOWED`.
+These direct invocations are not federation or p99 evidence.
+
+After the reviewed activation merges, allow the queued pipeline to finish self-mutation and
+any replacement execution, then require a successful complete dev release:
+
+1. Verify the data pool is Lite/classic hosted UI, Google-only SPA/code client with the exact
+   callback/logout URLs, mapped verified email, and the stable `presignup:live` trigger ARN.
+   The app must grant invocation only to this pool/account. Check alias concurrency remains READY.
+   During data-before-app deployment, missing pool-scoped permission denies sign-in; it never
+   permits an uninvited account. Do not treat the middle of deployment as acceptance.
+2. Confirm the generated dev-only native credential secret, password test client and three fixed
+   synthetic users were seeded. The database uninvited user/invitation must remain absent.
+   Check counts-only seed results; do not print passwords, Google details or token responses.
+3. Require authenticated smoke to pass invited `/me` 200, uninvited `/me` 403 and authenticated
+   unknown-path 404, with refresh-token revocation. No-token `/me` and unknown paths must return
+   Gateway 401; public health remains 200. Native tests do not replace Google acceptance.
+4. Inspect public `auth-config.json`: enabled true, exact deployed issuer/client/domain and
+   callback/logout URLs, no-store. Confirm CloudFront invalidation and the exact Cognito CSP
+   origin; no secret or test credential ARN may enter the file or browser bundle.
+5. Have the authorized owner demonstrate actual Google first sign-in, repeat sign-in and logout.
+   Verify one preserved internal UUID/subject binding and one accepted invitation. Capture only
+   safe outcomes, not identity attributes or callback codes. S1-18 also requires actual uninvited
+   refusal, deactivation enforcement and representative cold/warm trigger latency samples; static
+   timeouts and isolated initialization durations are insufficient to report p99.
+
+If a stage fails, investigate that execution's stable codes and request IDs before retrying;
+retry the same source release when safe rather than changing deployed pool settings manually.
+Keep the pool and existing bindings while diagnosing. **Do not use `auth.enabled:false` as a
+routine rollback after pool creation:** dev's removal policy deletes the pool, changing subjects
+on recreation and requiring a reviewed recovery/rebinding procedure. If access must be paused,
+prepare a reviewed change that disables the browser entry point while preserving the pool and
+Gateway protection. Keep incomplete live acceptance tickets in progress.

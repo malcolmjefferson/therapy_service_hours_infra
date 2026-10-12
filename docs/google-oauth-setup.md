@@ -1,6 +1,6 @@
 # Google OAuth setup (S1-01)
 
-**State: AWS secret and Google redirect settings verified; Cognito not deployed.** On 2026-10-11 the owner
+**State: dev activation prepared; live Cognito/federation verification pending.** On 2026-10-11 the owner
 reported Google OAuth setup complete. AWS checks confirmed the dev secret
 `therapy-service-hours/dev/google-oauth` exists in `us-west-2`, is not scheduled for deletion,
 and has an `AWSCURRENT` version. That version contains exactly `client_id` and `client_secret`,
@@ -17,8 +17,9 @@ Testing. The console currently lists no test users; Google documents an exceptio
 user restriction for these basic identity scopes alone ([audience documentation](https://support.google.com/cloud/answer/15549945?hl=en)).
 Live credential/federation verification remains outstanding; saved URLs and structural
 secret checks do not prove an end-to-end sign-in.
-Both environments have `auth.enabled: false`; merging this preparation creates no
-Cognito resources and makes no Google secret lookup. S1-01 stays in progress until activation and
+Dev now has `auth.enabled: true` in the activation change; prod remains false and production
+deployment stays deferred to M3. Merging activation creates the dev identity resources and
+resolves the existing Google secret during deployment. S1-01 stays in progress until activation and
 deployment verification finish. The owner creates the Google client; credential values never
 belong in chat, Git, CDK context, logs or the SPA bundle.
 
@@ -76,12 +77,13 @@ The CloudFormation execution role must be allowed to resolve this secret. There 
 
 ## Activation and verification
 
-Keep `auth.enabled` false until the Google secret exists and **S1-03** implements the
-invitation allowlist attachment. Disabling native self-sign-up alone does not block first
-Google sign-in (SEC-02). The attachment must be owned by the app stack, with app → data
-references only (ADR-0009). Calling `userPool.addTrigger` with an app-stack Lambda mutates
-the data-stack pool and creates a reverse dependency; S1-03 must use an app-owned attachment
-and test the complete stack graph. Do not activate this preparation by itself.
+The Google secret, S1-03 live trigger and paired Gateway/browser preparation releases are
+verified prerequisites for this dev activation. Disabling native self-sign-up alone does
+not block first Google sign-in (SEC-02). S1-03 installs the existing qualified alias's stable
+name in the data-owned pool template; its invocation permission belongs to app and is scoped
+to that pool. Cross-stack resource references stay app → data (ADR-0009). Calling
+`userPool.addTrigger` with an app-stack Lambda would create a reverse dependency. The complete
+enabled stack graph is tested. See [activation verification](runbook.md#18-dev-auth-activation-and-acceptance).
 
 Review the activation PR against S1-03, S1-14 (JWT authorizer), S1-09 (admin/test seed),
 S1-16 (CSP) and S1-10 (SPA callback). Run the pipeline through data, migration, app and web;
@@ -109,8 +111,8 @@ The Google credential secret adds **$0.40/month per environment**, plus API call
 secrets: approximately $0.80/month), separate from the existing RDS master secret. See
 [Secrets Manager pricing](https://aws.amazon.com/secrets-manager/pricing/). The approved
 pre-sign-up provisioned concurrency cost remains approximately $1–3/month (ADR-0007).
-The Cognito resources remain disabled; the separately deployed pre-sign-up alias incurs its
-approved provisioned-concurrency cost.
+Dev activation adds the reviewed dev resources; prod Cognito remains disabled. The existing
+pre-sign-up alias retains its approved provisioned-concurrency allocation.
 
 ## Prod at M3
 
@@ -124,6 +126,7 @@ on deletion/replacement, deletion protection is on, and the password test client
 
 Run `npm run typecheck`, `npm test` and `npm run synth` without deployment credentials.
 `test/auth.test.ts` synthesizes enabled dev/prod configurations in memory to inspect the
-prepared resources and verify the data/app/web graph. Default deploy config synthesizes no
-Cognito resources or Google secret dependency. These checks do not prove live federation;
+resources and verify the data/app/web graph. The deploy config creates dev Cognito resources;
+the disabled configuration test still proves no pool or Google secret dependency, and prod
+stays disabled. These checks do not prove live federation;
 the manual verification above remains outstanding.

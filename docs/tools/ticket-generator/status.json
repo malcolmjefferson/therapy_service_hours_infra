@@ -2,7 +2,7 @@
   "updated": "2026-10-11",
   "slices": {
     "S0": "All 21 implementation tickets are merged. Dev delivery is verified by successful pipeline executions, including release `7c97ec40-371c-4387-8c26-817c75450d4c` (data, migration, app, web, frontend sync and smoke). The owner deferred production deployment to M3; production execution, the recorded/manual failure-injection demo and SNS email receipt are not claimed by this update.",
-    "S1": "The accepted plan contains 20 tickets. Core identity/schema/policies are released; seed idempotency and synthetic admission are verified. Gateway/CSP/runtime configuration and browser PKCE preparation are merged and released. Role-authority and admin-recovery evidence are in review. The owner elected to keep the sole dev admin. Auth remains disabled; native fixture creation, actual Google federation, measured p99, live E2E and remaining role-specific shell acceptance are outstanding."
+    "S1": "Core identity/schema/policies and paired Gateway/browser preparation are released. Additional-admin recovery is merged, with the owner retaining the sole dev admin. Role-authority verification remains in review. Dev-only auth activation is prepared; live native/Google token acceptance, actual federation, measured p99 and remaining role-specific browser acceptance await release. Prod auth and production deployment remain disabled until M3."
   },
   "tickets": {
     "S0-01": {
@@ -183,7 +183,7 @@
     },
     "S1-01": {
       "status": "in progress",
-      "notes": "Cognito pool, Google IdP, clients and typed configuration are merged and synth-tested. The dev secret, matching Google client ID and saved redirect URI were verified. Read-only review verified the three basic identity scopes and External/Testing audience. Auth is disabled and no pool is deployed; activation and live federation verification remain.",
+      "notes": "Pool/Google/client implementation from infra #32 is merged. Dev-only activation is prepared after the successful paired Gateway/browser releases; prod auth/deploy remain disabled. Current Google secret and warmed alias prerequisites are verified. Pool creation and actual Google acceptance remain pending the activation release.",
       "prs": [
         "infra/32"
       ]
@@ -199,7 +199,7 @@
     },
     "S1-03": {
       "status": "in progress",
-      "notes": "Backend and infra are merged and released in dev execution 7c97ec40-371c-4387-8c26-817c75450d4c. The arm64 live alias is READY with reserved concurrency 1 and provisioned concurrency 1/1. A synthetic uninvited Google event returned SIGN_UP_NOT_ALLOWED; the decision log had only safe fields and no email. Policy and PostgreSQL tests pass. The single 66 ms sample is not p99 proof; actual federated acceptance and measured cold/warm p99 remain. The pipeline build-list bootstrap issue was repaired before release. Two provisioned cold initialization samples were 2805.16 and 3057.93 ms; these small samples do not establish p99.",
+      "notes": "Backend trigger and infra attachment are merged. Latest preflight live alias version 3 is READY at 1/1; synthetic external-provider invited admission passes and uninvited denies SIGN_UP_NOT_ALLOWED. Dev activation is prepared; actual federation and measured p99 remain S1-18 acceptance.",
       "prs": [
         "backend/22",
         "infra/33"
@@ -244,7 +244,7 @@
     "S1-09": {
       "status": "in progress",
       "merged": true,
-      "notes": "Backend #23 and infra #35/#36 are merged and released in successful dev execution 2a38a300-3311-43f7-9552-d07875d6e696. Seeding created three accounts and three invitations; a repeat under the same scoped operator created/renewed none. Synthetic Google events for invited and supervisor fixtures were allowed, while uninvited was denied. Auth remains disabled; the native Cognito fixture phase remains pending.",
+      "notes": "Seed implementation is merged/released with verified DB idempotency. S1-20 recovery support and sole-admin owner decision are complete. Dev activation prepares native fixture/credential creation; those writes and authenticated acceptance await release.",
       "prs": [
         "backend/23",
         "infra/35",
@@ -278,7 +278,7 @@
     "S1-14": {
       "status": "in progress",
       "merged": true,
-      "notes": "Infra #37 is merged and released in successful dev execution 3572ade1-29e7-4486-bafa-50581759b998; paired frontend #21 is released in ab156fe8-0a32-420e-b18c-48a2b6dcc691. Gateway JWT routes, audiences and scoped native token gates are implemented. Auth stays disabled; authenticated acceptance awaits activation.",
+      "notes": "Gateway implementation from infra #37 is merged/released. Dev activation is prepared with exactly one public health route, issuer/SPA+dev-test audiences and scoped native token checks. Live authenticated Gateway acceptance awaits the activation release.",
       "prs": [
         "infra/37"
       ]
@@ -286,7 +286,7 @@
     "S1-16": {
       "status": "in progress",
       "merged": true,
-      "notes": "Infra #37 and frontend #21 are merged and released successfully in ab156fe8-0a32-420e-b18c-48a2b6dcc691. Exact Cognito CSP origin and validated no-store public runtime settings pass release header/browser smoke. Enabled auth runtime acceptance awaits activation.",
+      "notes": "Exact Cognito CSP and public runtime config from infra #37/frontend #21 are merged/released. Activation switches dev runtime config to deployed pool/client outputs with no-store; prod remains disabled. Live enabled acceptance awaits release.",
       "prs": [
         "infra/37",
         "frontend/21"
@@ -317,9 +317,9 @@
       "notes": "PostgreSQL regression tests reuse unchanged trusted claims after database admin/supervisor removal and deactivation, and reject token-group elevation for ordinary users. Role-authority runbook documents next-request enforcement, in-flight request timing and S5-05 Cognito follow-up. Review/merge remains pending; actual Gateway token acceptance is separately gated on activation."
     },
     "S1-20": {
-      "status": "in review",
-      "merged": false,
-      "notes": "Additional-admin recovery is verified against PostgreSQL in dev and explicitly opted-in prod: original binding/history preserved, repeat idempotent, missing prod flag makes no writes. Runbook has exact scoped Lambda invocation and failure handling. Owner decided 2026-10-11 to retain the sole dev admin; no additional live identity is seeded. Review/merge remains pending; no live recovery drill is claimed.",
+      "status": "done",
+      "merged": true,
+      "notes": "Backend #26 and infra #38 are merged. PostgreSQL recovery tests preserve the first bound admin/history, are idempotent and require explicit prod opt-in. The runbook gives exact additional-admin invocation and safe failure handling. Owner explicitly elected to retain the sole dev admin; no second live identity or live recovery drill is claimed.",
       "prs": [
         "backend/26",
         "infra/38"

@@ -31,7 +31,7 @@ describe('database role bootstrap (S0-08, ADR-0001 amendment)', () => {
       Database: 'therapy_service_hours',
       Revision: '3',
     });
-    const json = JSON.stringify(t.toJSON());
+    const json = JSON.stringify(t.findResources('Custom::DatabaseRoles'));
     expect(json).not.toMatch(/\{\{resolve:secretsmanager/);
     expect(json).not.toMatch(/MasterPassword|"Password"/);
   });
@@ -77,14 +77,21 @@ describe('database role bootstrap (S0-08, ADR-0001 amendment)', () => {
     expect(actions.some((a) => a.startsWith('secretsmanager:'))).toBe(false);
   });
 
-  test('only the provider role mentions Secrets Manager anywhere in the stack', () => {
+  test('only the bootstrap provider and dev smoke reader have scoped secret access in data', () => {
     const t = template();
     const all = Object.values(t.findResources('AWS::IAM::Policy')).flatMap(
       (p) => (p as { Properties: { PolicyDocument: { Statement: Statement[] } } }).Properties.PolicyDocument.Statement,
     );
     const secretStatements = all.filter((s) => [s.Action].flat().some((a) => a.startsWith('secretsmanager:')));
-    expect(secretStatements).toHaveLength(1);
-    expect(statementsOf(t, 'DatabaseRolesProvider')).toContainEqual(secretStatements[0]);
+    const provider = statementsOf(t, 'DatabaseRolesProvider').filter((s) => [s.Action].flat().some((a) => a.startsWith('secretsmanager:')));
+    const reader = statementsOf(t, 'AuthSmokeReader').filter((s) => [s.Action].flat().some((a) => a.startsWith('secretsmanager:')));
+    expect(provider).toHaveLength(1);
+    expect(reader).toHaveLength(1);
+    expect(secretStatements).toHaveLength(2);
+    expect(secretStatements).toEqual(expect.arrayContaining([...provider, ...reader]));
+    expect(JSON.stringify(provider[0].Resource)).toContain('MasterUserSecret.SecretArn');
+    expect(JSON.stringify(reader[0].Resource)).toContain('AuthTestCredentials');
+    expect(JSON.stringify(reader[0].Resource)).not.toContain('MasterUserSecret');
   });
 
   test('both functions keep logs for the environment retention', () => {
