@@ -1,8 +1,8 @@
 {
-  "updated": "2026-10-12",
+  "updated": "2026-10-13",
   "slices": {
     "S0": "All 21 implementation tickets are merged. Dev delivery is verified by successful pipeline executions, including release `7c97ec40-371c-4387-8c26-817c75450d4c` (data, migration, app, web, frontend sync and smoke). The owner deferred production deployment to M3; production execution, the recorded/manual failure-injection demo and SNS email receipt are not claimed by this update.",
-    "S1": "Enabled dev release 7969a830-cd94-41da-bf97-6693b389e17d succeeded with backend #29 and merged frontend #22. Both native browser cases pass in pipeline smoke; repeated seed creates/renews nothing. Real Google owner sign-in/repeat/logout/reload and unchanged persisted binding counts are verified. A separate real uninvited Google account is refused and remains absent from Cognito. S1-13 is complete. The owner reports the deactivated-account slice demo passed on dev with a second real Google account (2026-10-13). Representative cold p99 and future role-specific navigation acceptance remain open. The owner retains the sole dev admin; prod auth/deploy remain disabled."
+    "S1": "Enabled dev release 7969a830-cd94-41da-bf97-6693b389e17d succeeded with backend #29 and merged frontend #22. Both native browser cases pass in pipeline smoke; repeated seed creates/renews nothing. Real Google owner sign-in/repeat/logout/reload and unchanged persisted binding counts are verified. A separate real uninvited Google account is refused and remains absent from Cognito. S1-13 is complete. The owner reports the deactivated-account slice demo passed on dev with a second real Google account (2026-10-13). Cold-start evidence from the existing dev logs is recorded in ADR-0007 and accepted by the owner; it is not an on-demand p99. Future role-specific navigation acceptance (S1-11) remains open. The owner retains the sole dev admin; prod auth/deploy remain disabled."
   },
   "tickets": {
     "S0-01": {
@@ -16,7 +16,7 @@
     },
     "S0-02": {
       "status": "done",
-      "notes": "Accepted ADR-0001\u20130006 and owner decisions are reflected in the shared specification.",
+      "notes": "Accepted ADR-0001–0006 and owner decisions are reflected in the shared specification.",
       "prs": [
         "backend/6",
         "frontend/3",
@@ -119,7 +119,7 @@
     },
     "S0-15": {
       "status": "done",
-      "notes": "Dev data \u2192 migration \u2192 app \u2192 web \u2192 frontend sync \u2192 smoke completed successfully. Concurrency preflight is deployed.",
+      "notes": "Dev data → migration → app → web → frontend sync → smoke completed successfully. Concurrency preflight is deployed.",
       "prs": [
         "infra/17",
         "infra/27"
@@ -192,7 +192,7 @@
     },
     "S1-02": {
       "status": "done",
-      "notes": "Owner accepted ADR-0008\u20130011 on 2026-10-11; decisions are merged in all three repositories. Live binding and latency proof are separate S1-18 acceptance work.",
+      "notes": "Owner accepted ADR-0008–0011 on 2026-10-11; decisions are merged in all three repositories. Live binding and latency proof are separate S1-18 acceptance work.",
       "prs": [
         "backend/17",
         "frontend/18",
@@ -200,8 +200,8 @@
       ]
     },
     "S1-03": {
-      "status": "in progress",
-      "notes": "The merged trigger admits the real invited Google owner and refuses a separate real uninvited Google account with SIGN_UP_NOT_ALLOWED on version 5; Cognito identity count remains zero after refusal. PostgreSQL and privacy tests cover expired/accepted invitations and deactivated users. The read-only role and warmed alias are deployed. Representative cold-start p99 remains unverified. The owner reports the returning-deactivated-account slice demo passed on dev with a second real Google account (reported 2026-10-13); no account identifier or screenshot is committed.",
+      "status": "done",
+      "notes": "The merged trigger admits the real invited Google owner and refuses a separate real uninvited Google account with SIGN_UP_NOT_ALLOWED on version 5; Cognito identity count remains zero after refusal. PostgreSQL and privacy tests cover expired/accepted invitations and deactivated users. The read-only role and warmed alias are deployed. The owner reports the returning-deactivated-account slice demo passed on dev with a second real Google account (2026-10-13); no account identifier or screenshot is committed. Latency: the owner accepted the existing dev CloudWatch evidence recorded in ADR-0007 (32 environment init durations, max 3.06 s; 7 first invocations, max 1.47 s; 113 warm invocations, p99 71.8 ms). That is not an on-demand cold-start p99: the sample is small, the logs cannot show true cold starts because reserved and provisioned concurrency are both 1, and headroom under the 5 s ceiling is about 0.5 s.",
       "prs": [
         "backend/28"
       ],
@@ -340,12 +340,13 @@
       "notes": "Frontend #22 is merged and released. Both native invited/denied browser cases explicitly passed in pipeline smoke in d41c4fb4-4e96-42d8-98bc-67da2a878869 and 7969a830-cd94-41da-bf97-6693b389e17d. The separate real Google demo records owner sign-in/repeat/logout/reload and uninvited denial; the uninvited account has zero Cognito identities before and after. No real credentials or identities were committed; automated tests do not drive Google. The owner reports the deactivated-account slice demo passed separately on dev with a second real Google account (2026-10-13)."
     },
     "S1-18": {
-      "status": "in progress",
+      "status": "done",
       "merged": true,
       "prs": [
-        "backend/29"
+        "backend/29",
+        "backend/33"
       ],
-      "notes": "Backend #29 is merged and released successfully in 7969a830-cd94-41da-bf97-6693b389e17d. Read-only owner verification before and after another real Google sign-in returns one Google identity and unchanged counts of one user, subject match, active admin and accepted invitation. Real uninvited Google sign-in is refused with SIGN_UP_NOT_ALLOWED (handler duration 69 ms, version 5) and creates no Cognito identity. Prior 99 warm version-3 samples have REPORT p99/max 54.37 ms. These observations do not establish representative cold-start p99, which remains outstanding. ADR-0008 records binding proof; production and the sole-admin decision are unchanged."
+      "notes": "Backend #29 is merged and released successfully in 7969a830-cd94-41da-bf97-6693b389e17d. Read-only owner verification before and after another real Google sign-in returns one Google identity and unchanged counts of one user, subject match, active admin and accepted invitation. Real uninvited Google sign-in is refused with SIGN_UP_NOT_ALLOWED (handler duration 69 ms, version 5) and creates no Cognito identity. Backend #33 records the existing dev CloudWatch cold-start evidence in ADR-0007, accepted by the owner in place of a probe run: it states that no p99 is claimed, that the logs cannot show on-demand cold starts, and that headroom under the 5 s ceiling is about 0.5 s. No AWS resource was changed. ADR-0008 records binding proof; production and the sole-admin decision are unchanged."
     }
   }
 }

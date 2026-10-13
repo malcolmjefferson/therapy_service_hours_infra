@@ -15,11 +15,11 @@ An invited Google account signs in and sees its name and role-based navigation; 
 - [ ] The demo above is performed on dev by someone other than the author, or recorded
 - [ ] Docs updated (this folder, OpenAPI, CLAUDE.md if contracts changed)
 
-## Execution status (2026-10-12)
+## Execution status (2026-10-13)
 
-**17 done** · **3 in progress** · **0 in review** · **0 not started**
+**19 done** · **1 in progress** · **0 in review** · **0 not started**
 
-Enabled dev release 7969a830-cd94-41da-bf97-6693b389e17d succeeded with backend #29 and merged frontend #22. Both native browser cases pass in pipeline smoke; repeated seed creates/renews nothing. Real Google owner sign-in/repeat/logout/reload and unchanged persisted binding counts are verified. A separate real uninvited Google account is refused and remains absent from Cognito. S1-13 is complete. The owner reports the deactivated-account slice demo passed on dev with a second real Google account (2026-10-13). Representative cold p99 and future role-specific navigation acceptance remain open. The owner retains the sole dev admin; prod auth/deploy remain disabled.
+Enabled dev release 7969a830-cd94-41da-bf97-6693b389e17d succeeded with backend #29 and merged frontend #22. Both native browser cases pass in pipeline smoke; repeated seed creates/renews nothing. Real Google owner sign-in/repeat/logout/reload and unchanged persisted binding counts are verified. A separate real uninvited Google account is refused and remains absent from Cognito. S1-13 is complete. The owner reports the deactivated-account slice demo passed on dev with a second real Google account (2026-10-13). Cold-start evidence from the existing dev logs is recorded in ADR-0007 and accepted by the owner; it is not an on-demand p99. Future role-specific navigation acceptance (S1-11) remains open. The owner retains the sole dev admin; prod auth/deploy remain disabled.
 
 **Status legend:** done = merged implementation; in progress = partial implementation or remaining acceptance; in review = open PR; not started = implementation has not begun. Completion notes distinguish dev verification from deferred prod/manual acceptance. Acceptance checkboxes are not automatically checked from merge status.
 
@@ -31,8 +31,8 @@ Enabled dev release 7969a830-cd94-41da-bf97-6693b389e17d succeeded with backend 
 | [S1-04](#s1-04) | Story | Migration: organizations, users, invitations; seed Default Organization | 1.5 | S0-10 | done |
 | [S1-17](#s1-17) | Task | Read-only database role for the pre-sign-up trigger | 1 | S0-08 | done |
 | [S1-01](#s1-01) | Story | Cognito user pool, Google IdP, app client, hosted UI, secrets and token settings | 2 | S0-15, S1-02 | done |
-| [S1-18](#s1-18) | Spike | Spike proof: federated binding and trigger latency measured on dev | 0.5 | S1-01, S1-03 | in progress |
-| [S1-03](#s1-03) | Story | PreSignUp Lambda enforcing the invitation allowlist | 1.5 | S1-01, S1-04, S1-17 | in progress |
+| [S1-18](#s1-18) | Spike | Spike proof: federated binding and trigger latency measured on dev | 0.5 | S1-01, S1-03 | done |
+| [S1-03](#s1-03) | Story | PreSignUp Lambda enforcing the invitation allowlist | 1.5 | S1-01, S1-04, S1-17 | done |
 | [S1-14](#s1-14) | Task | API Gateway JWT authorizer with a public /healthz route | 1 | S1-01 | done |
 | [S1-15](#s1-15) | Task | Authorizer claims through the Lambda adapter | 0.5 | S0-03 | done |
 | [S1-05](#s1-05) | Task | OpenAPI: /me and the shared Problem responses | 1 | S0-19 | done |
@@ -64,7 +64,7 @@ Enabled dev release 7969a830-cd94-41da-bf97-6693b389e17d succeeded with backend 
 | Stories | US-01 |
 | Is blocked by | S0-02 |
 | Blocks | S1-01, S5-05 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -106,7 +106,7 @@ Decision-first half of the spike, before any auth code. OQ-01 is already decided
 | Stories | US-46 |
 | Is blocked by | S0-10 |
 | Blocks | S1-03, S1-06, S1-09, S2-01, S5-01, S6-01 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -148,7 +148,7 @@ goose migration creating the tables per CLAUDE.md §9 with citext email uniquene
 | Stories | US-39 |
 | Is blocked by | S0-08 |
 | Blocks | S1-03 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -189,7 +189,7 @@ Extend the S0-08 role bootstrap with a third IAM role, presignup_ro, that may on
 | Stories | US-01 |
 | Is blocked by | S0-15, S1-02 |
 | Blocks | S1-18, S1-03, S1-14, S1-09, S1-16, S1-10, S5-04 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -233,13 +233,13 @@ CDK auth construct in the data stack (ADR-0009, the pool is stateful): user pool
 | Stories | US-01 |
 | Is blocked by | S1-01, S1-03 |
 | Blocks | - |
-| Status (2026-10-12) | in progress |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
-Backend #29 is merged and released successfully in 7969a830-cd94-41da-bf97-6693b389e17d. Read-only owner verification before and after another real Google sign-in returns one Google identity and unchanged counts of one user, subject match, active admin and accepted invitation. Real uninvited Google sign-in is refused with SIGN_UP_NOT_ALLOWED (handler duration 69 ms, version 5) and creates no Cognito identity. Prior 99 warm version-3 samples have REPORT p99/max 54.37 ms. These observations do not establish representative cold-start p99, which remains outstanding. ADR-0008 records binding proof; production and the sole-admin decision are unchanged.
+Backend #29 is merged and released successfully in 7969a830-cd94-41da-bf97-6693b389e17d. Read-only owner verification before and after another real Google sign-in returns one Google identity and unchanged counts of one user, subject match, active admin and accepted invitation. Real uninvited Google sign-in is refused with SIGN_UP_NOT_ALLOWED (handler duration 69 ms, version 5) and creates no Cognito identity. Backend #33 records the existing dev CloudWatch cold-start evidence in ADR-0007, accepted by the owner in place of a probe run: it states that no p99 is claimed, that the logs cannot show on-demand cold starts, and that headroom under the 5 s ceiling is about 0.5 s. No AWS resource was changed. ADR-0008 records binding proof; production and the sole-admin decision are unchanged.
 
-Merged PRs: [backend #29](https://github.com/malcolmjefferson/therapy_service_hours_backend/pull/29).
+Merged PRs: [backend #29](https://github.com/malcolmjefferson/therapy_service_hours_backend/pull/29), [backend #33](https://github.com/malcolmjefferson/therapy_service_hours_backend/pull/33).
 
 **Description**
 
@@ -273,11 +273,11 @@ Second half of the spike, once the pool exists. Prove on dev what ADR-0007 and A
 | Stories | US-02 |
 | Is blocked by | S1-01, S1-04, S1-17 |
 | Blocks | S1-18, S1-13, S5-11 |
-| Status (2026-10-12) | in progress |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
-The merged trigger admits the real invited Google owner and refuses a separate real uninvited Google account with SIGN_UP_NOT_ALLOWED on version 5; Cognito identity count remains zero after refusal. PostgreSQL and privacy tests cover expired/accepted invitations and deactivated users. The read-only role and warmed alias are deployed. Representative cold-start p99 remains unverified. The owner reports the returning-deactivated-account slice demo passed on dev with a second real Google account (reported 2026-10-13); no account identifier or screenshot is committed.
+The merged trigger admits the real invited Google owner and refuses a separate real uninvited Google account with SIGN_UP_NOT_ALLOWED on version 5; Cognito identity count remains zero after refusal. PostgreSQL and privacy tests cover expired/accepted invitations and deactivated users. The read-only role and warmed alias are deployed. The owner reports the returning-deactivated-account slice demo passed on dev with a second real Google account (2026-10-13); no account identifier or screenshot is committed. Latency: the owner accepted the existing dev CloudWatch evidence recorded in ADR-0007 (32 environment init durations, max 3.06 s; 7 first invocations, max 1.47 s; 113 warm invocations, p99 71.8 ms). That is not an on-demand cold-start p99: the sample is small, the logs cannot show true cold starts because reserved and provisioned concurrency are both 1, and headroom under the 5 s ceiling is about 0.5 s.
 
 Merged PRs: [backend #28](https://github.com/malcolmjefferson/therapy_service_hours_backend/pull/28).
 
@@ -317,7 +317,7 @@ VPC Lambda trigger connecting as presignup_ro with RDS IAM auth; rejects emails 
 | Stories | US-01, US-42 |
 | Is blocked by | S1-01 |
 | Blocks | S1-06 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -360,7 +360,7 @@ S0 built one route, ANY /api/v1/{proxy+} (lib/app/api.ts), and API Gateway attac
 | Stories | US-01 |
 | Is blocked by | S0-03 |
 | Blocks | S1-06 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -401,7 +401,7 @@ internal/apigw.toHTTPRequest copies path, method, query, body, headers and cooki
 | Stories | US-01 |
 | Is blocked by | S0-19 |
 | Blocks | S1-19, S1-06 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -443,7 +443,7 @@ Spec GET /me (id, name, email, roles, organization) and the shared 401, 403 and 
 | Stories | US-01 |
 | Is blocked by | S1-05 |
 | Blocks | - |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -484,7 +484,7 @@ The drift gate compares the pinned spec to the backend spec byte for byte (scrip
 | Stories | US-01, US-02 |
 | Is blocked by | S1-04, S1-05, S1-14, S1-15, S0-09 |
 | Blocks | S1-07, S1-08, S1-12 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -526,7 +526,7 @@ Wire the pgx pool into cmd/api, which has no database today, then resolve the ac
 | Stories | US-44 |
 | Is blocked by | S1-06 |
 | Blocks | S1-08, S2-05, S2-06, S2-07, S3-03, S5-03, S8-02, S10-03 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -567,7 +567,7 @@ Central policy package: Actor type, role predicates, relationship checks interfa
 | Stories | US-01 |
 | Is blocked by | S1-06, S1-07 |
 | Blocks | S1-10 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -608,7 +608,7 @@ Returns the current user's profile, roles and organization via a dedicated DTO.
 | Stories | US-46 |
 | Is blocked by | S1-04, S1-01 |
 | Blocks | S1-20, S1-13 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -651,7 +651,7 @@ There is no direct database access in any environment (no bastion, by budget), s
 | Stories | US-46 |
 | Is blocked by | S1-09 |
 | Blocks | - |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -691,7 +691,7 @@ Sign-in is Google only and SEC-07 forbids a backdoor, so if the single admin's G
 | Stories | US-01 |
 | Is blocked by | S1-01 |
 | Blocks | S1-10 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -732,7 +732,7 @@ lib/app/web.ts sets connect-src 'self' and says in a comment that S1 adds the Co
 | Stories | US-01 |
 | Is blocked by | S1-01, S1-08, S1-16, S0-19 |
 | Blocks | S1-11 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -775,7 +775,7 @@ Redirect flow, tokens in memory with refresh, AuthProvider and useAuth, protecte
 | Stories | US-01, US-02 |
 | Is blocked by | S1-10 |
 | Blocks | S1-13, S5-13, S6-09, S6-11, S8-04, S10-05 |
-| Status (2026-10-12) | in progress |
+| Status (2026-10-13) | in progress |
 
 **Completion / progress**
 
@@ -816,7 +816,7 @@ Header with title/kicker per prototype, user name menu, nav items by role, signe
 | Stories | US-44 |
 | Is blocked by | S1-06 |
 | Blocks | - |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -857,7 +857,7 @@ Verify that the users row decides admin and supervisor, and that cognito:groups 
 | Stories | US-01, US-02 |
 | Is blocked by | S1-11, S1-09, S1-03 |
 | Blocks | S2-17 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
