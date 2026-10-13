@@ -15,7 +15,7 @@ Open the dev and prod URLs: the Status page shows the API version and database c
 - [ ] The demo above is performed on dev by someone other than the author, or recorded
 - [ ] Docs updated (this folder, OpenAPI, CLAUDE.md if contracts changed)
 
-## Execution status (2026-10-12)
+## Execution status (2026-10-13)
 
 **21 done** · **0 in progress** · **0 in review** · **0 not started**
 
@@ -65,7 +65,7 @@ All 21 implementation tickets are merged. Dev delivery is verified by successful
 | Stories | US-39 |
 | Is blocked by | - |
 | Blocks | S0-02, S0-03, S0-05, S0-13 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -106,7 +106,7 @@ Owner creates the three public GitHub repos under malcolmjefferson; add CLAUDE.m
 | Stories | US-39 |
 | Is blocked by | S0-01 |
 | Blocks | S0-07, S1-02 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -145,7 +145,7 @@ Owner accepted ADR-0001 to ADR-0006 and confirmed ASM-01..ASM-07 and OQ-02/OQ-03
 | Stories | US-42 |
 | Is blocked by | S0-01 |
 | Blocks | S0-04, S0-09, S0-11, S0-17, S1-15 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -186,7 +186,7 @@ Create therapy_service_hours_backend layout (CLAUDE.md §3.1): config, structure
 | Stories | US-39 |
 | Is blocked by | S0-03 |
 | Blocks | S0-13, S0-19 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -227,7 +227,7 @@ Author api/openapi.yaml (healthz, Problem schema, conventions for pagination and
 | Stories | US-39, US-42 |
 | Is blocked by | S0-01 |
 | Blocks | S0-06, S0-07, S0-14 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -267,7 +267,7 @@ Create therapy_service_hours_infra: bin/, lib/, config/dev.ts and prod.ts (accou
 | Stories | US-41 |
 | Is blocked by | S0-05 |
 | Blocks | - |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -307,7 +307,7 @@ CDK Aspect/test that fails synth if a NAT Gateway, RDS Proxy, interface VPC endp
 | Stories | US-39 |
 | Is blocked by | S0-05, S0-02 |
 | Blocks | S0-08, S0-11 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -348,7 +348,7 @@ VPC with private-isolated subnets in two AZs and an S3 gateway endpoint (no NAT)
 | Stories | US-39 |
 | Is blocked by | S0-07 |
 | Blocks | S0-10, S1-17 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -388,7 +388,7 @@ Idempotent custom resource (Lambda in VPC) creates roles with GRANT rds_iam; app
 | Stories | US-39 |
 | Is blocked by | S0-03 |
 | Blocks | S0-10, S1-06 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -428,7 +428,7 @@ internal/db: pgx pool (max 2 conns), BeforeConnect hook that signs a fresh IAM t
 | Stories | US-40 |
 | Is blocked by | S0-09, S0-08 |
 | Blocks | S0-15, S1-04 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -469,7 +469,7 @@ cmd/migrate: embeds db/migrations, takes a Postgres advisory lock, runs goose as
 | Stories | US-39, US-42 |
 | Is blocked by | S0-03, S0-07 |
 | Blocks | S0-12, S0-18 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -509,7 +509,7 @@ Go Lambda (provided.al2023, arm64) in private subnets, reserved concurrency cap,
 | Stories | US-39 |
 | Is blocked by | S0-11 |
 | Blocks | S0-15 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -550,7 +550,7 @@ Private S3 bucket (Block Public Access, OAC), CloudFront with S3 default behavio
 | Stories | US-39 |
 | Is blocked by | S0-01, S0-04 |
 | Blocks | S0-15, S0-17, S0-19, S2-10 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -591,7 +591,7 @@ Create therapy_service_hours_frontend: Vite React TS, React Router, TanStack Que
 | Stories | US-39 |
 | Is blocked by | S0-05, S0-17 |
 | Blocks | S0-15, S0-18, S0-19 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -632,7 +632,7 @@ CDK Pipelines in infra repo with sources from all three repos, queued execution,
 | Stories | US-39, US-40 |
 | Is blocked by | S0-14, S0-10, S0-12, S0-13 |
 | Blocks | S0-16, S0-20, S1-01 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -672,7 +672,7 @@ Dev stage deploys data stack, invokes migrate Lambda from non-VPC CodeBuild, dep
 | Stories | US-39, US-40 |
 | Is blocked by | S0-15 |
 | Blocks | S0-21 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -713,7 +713,7 @@ Approval stage shows the three commit SHAs and sends SNS; on approval takes an R
 | Stories | US-43 |
 | Is blocked by | S0-03, S0-13 |
 | Blocks | S0-14 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -753,7 +753,7 @@ golangci-lint, gosec (G201/G202), govulncheck, Semgrep rule forbidding string-bu
 | Stories | US-41, US-42 |
 | Is blocked by | S0-11, S0-14 |
 | Blocks | - |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -794,7 +794,7 @@ SNS topic subscribed to owner email, AWS Budget at $50/month with 80% and 100% a
 | Stories | US-39 |
 | Is blocked by | S0-04, S0-13, S0-14 |
 | Blocks | S1-05, S1-10 |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -834,7 +834,7 @@ Pipeline build copies backend spec at the released commit into frontend, runs op
 | Stories | US-39 |
 | Is blocked by | S0-15 |
 | Blocks | - |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
@@ -874,7 +874,7 @@ Playwright test: deep link loads SPA, /api/v1/healthz returns JSON, unknown API 
 | Stories | US-39 |
 | Is blocked by | S0-16 |
 | Blocks | - |
-| Status (2026-10-12) | done |
+| Status (2026-10-13) | done |
 
 **Completion / progress**
 
