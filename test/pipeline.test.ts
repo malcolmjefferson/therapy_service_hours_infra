@@ -7,7 +7,7 @@ import { App } from 'aws-cdk-lib/core';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { PLACEHOLDER_ACCOUNT } from '../lib/account';
 import { placeholderArtifacts } from '../lib/artifacts';
-import { PipelineStack, REPOSITORIES } from '../lib/pipeline/pipeline-stack';
+import { DOCS_ONLY_PATHS, PipelineStack, REPOSITORIES } from '../lib/pipeline/pipeline-stack';
 
 // Most tests cover the full pipeline with prod on (the M3 configuration); the deployProd: false
 // tests cover the current one (RELEASE.deployProd).
@@ -80,8 +80,35 @@ describe('release pipeline (S0-14, ADR-0005)', () => {
     const repos = (source?.Actions ?? []).map((a) => a.Configuration?.FullRepositoryId).sort();
     expect(repos).toEqual(Object.values(REPOSITORIES).sort());
     for (const a of source?.Actions ?? []) {
-      expect(a.Configuration).toMatchObject({ BranchName: 'main', DetectChanges: true });
+      expect(a.Configuration).toMatchObject({ BranchName: 'main', DetectChanges: false });
     }
+  });
+
+  test('each source starts runs only from pushes to main that change more than docs', () => {
+    const t = pipelineTemplate();
+    const names = (stages(t).find((s) => s.Name === 'Source')?.Actions ?? []).map((a) => a.Name).sort();
+    const pipeline = Object.values(t.findResources('AWS::CodePipeline::Pipeline'))[0] as {
+      Properties: { Triggers: { ProviderType: string; GitConfiguration: { SourceActionName: string; Push: { Branches: { Includes: string[] }; FilePaths: { Excludes: string[] } }[] } }[] };
+    };
+    const triggers = pipeline.Properties.Triggers;
+    expect(triggers.map((x) => x.GitConfiguration.SourceActionName).sort()).toEqual(names);
+    for (const x of triggers) {
+      expect(x.ProviderType).toBe('CodeStarSourceConnection');
+      expect(x.GitConfiguration.Push).toEqual([{ Branches: { Includes: ['main'] }, FilePaths: { Excludes: DOCS_ONLY_PATHS } }]);
+    }
+  });
+
+  test('build logs go to one group with 14-day retention, and builds time out after 30 minutes', () => {
+    const t = pipelineTemplate();
+    t.hasResourceProperties('AWS::Logs::LogGroup', { LogGroupName: '/therapy-service-hours/pipeline/codebuild', RetentionInDays: 14 });
+    const projects = Object.values(t.findResources('AWS::CodeBuild::Project')) as { Properties: { TimeoutInMinutes?: number; LogsConfig?: { CloudWatchLogs?: { GroupName?: unknown } } } }[];
+    expect(projects.length).toBeGreaterThan(0);
+    for (const p of projects) {
+      expect(p.Properties.TimeoutInMinutes).toBeLessThanOrEqual(60);
+      expect(p.Properties.LogsConfig?.CloudWatchLogs?.GroupName).toBeDefined();
+    }
+    const defaulted = projects.filter((p) => p.Properties.TimeoutInMinutes === 30);
+    expect(defaulted.length).toBeGreaterThan(0);
   });
 
   test('build, self-mutate, publish assets, dev, then prod, in that order', () => {
