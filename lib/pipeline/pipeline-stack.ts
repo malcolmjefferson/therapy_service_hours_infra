@@ -1,10 +1,11 @@
-import { ArnFormat, Aspects, Aws, CfnOutput, Duration, Stack, StackProps, Tags } from 'aws-cdk-lib/core';
+import { ArnFormat, Aspects, Aws, CfnOutput, Duration, RemovalPolicy, Stack, StackProps, Tags } from 'aws-cdk-lib/core';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as codeconnections from 'aws-cdk-lib/aws-codeconnections';
 import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as pipelines from 'aws-cdk-lib/pipelines';
@@ -25,6 +26,19 @@ export const REPOSITORIES = {
 
 /** Branch every source follows. */
 export const RELEASE_BRANCH = 'main';
+
+/**
+ * Pushes that change only these paths start no run. A run costs about $0.30–0.40 (CodeBuild plus
+ * CodePipeline V2 action minutes) and a documentation change cannot alter a deployed artifact.
+ * A push that also touches any other path still starts one. Matching is on the paths of the push.
+ */
+export const DOCS_ONLY_PATHS = ['docs/**', '*.md', '**/*.md'];
+
+/** CodeBuild logs are kept this long (the default is forever); matches the dev log retention. */
+export const BUILD_LOG_RETENTION = logs.RetentionDays.TWO_WEEKS;
+
+/** Upper bound for any build step without its own timeout (the CodeBuild default is 60 minutes). */
+export const BUILD_TIMEOUT = Duration.minutes(30);
 
 /** The Lambdas the backend build produces, one directory each under its output. */
 /**
@@ -88,7 +102,9 @@ export class PipelineStack extends Stack {
     const source = (repo: string) =>
       pipelines.CodePipelineSource.connection(repo, RELEASE_BRANCH, {
         connectionArn: connection.attrConnectionArn,
-        triggerOnPush: true,
+        // Pushes are started by the explicit filtered triggers added after buildPipeline(); change
+        // detection on the action itself cannot filter by path.
+        triggerOnPush: false,
       });
     this.sources = { infra: source(REPOSITORIES.infra), backend: source(REPOSITORIES.backend), frontend: source(REPOSITORIES.frontend) };
 
@@ -157,6 +173,17 @@ export class PipelineStack extends Stack {
       dockerEnabledForSynth: false,
       codeBuildDefaults: {
         buildEnvironment: { buildImage: codebuild.LinuxBuildImage.STANDARD_7_0, computeType: codebuild.ComputeType.SMALL },
+        timeout: BUILD_TIMEOUT,
+        // One shared group with retention, instead of an unbounded /aws/codebuild/<project> group per step.
+        logging: {
+          cloudWatch: {
+            logGroup: new logs.LogGroup(this, 'BuildLogs', {
+              logGroupName: `/${APP_NAME}/pipeline/codebuild`,
+              retention: BUILD_LOG_RETENTION,
+              removalPolicy: RemovalPolicy.DESTROY,
+            }),
+          },
+        },
       },
     });
 
@@ -180,6 +207,7 @@ export class PipelineStack extends Stack {
     }
 
     this.pipeline.buildPipeline();
+    this.addFilteredPushTriggers(codePipeline);
 
     this.topic = new sns.Topic(this, 'Notifications', {
       topicName: `${APP_NAME}-pipeline`,
@@ -195,6 +223,27 @@ export class PipelineStack extends Stack {
       description: 'Authorize this GitHub connection once in the console (Developer Tools > Connections)',
       value: connection.attrConnectionArn,
     });
+  }
+
+  /**
+   * One push trigger per source on the release branch that ignores documentation-only pushes
+   * (DOCS_ONLY_PATHS). Must run after buildPipeline(), which is what creates the source actions.
+   */
+  private addFilteredPushTriggers(codePipeline: codepipeline.Pipeline): void {
+    const sourceStage = codePipeline.stages.find((stage) => stage.stageName === 'Source');
+    const actions = sourceStage?.actions ?? [];
+    if (actions.length !== Object.keys(REPOSITORIES).length) {
+      throw new Error(`Expected ${Object.keys(REPOSITORIES).length} source actions, found ${actions.length}`);
+    }
+    for (const sourceAction of actions) {
+      codePipeline.addTrigger({
+        providerType: codepipeline.ProviderType.CODE_STAR_SOURCE_CONNECTION,
+        gitConfiguration: {
+          sourceAction,
+          pushFilter: [{ branchesIncludes: [RELEASE_BRANCH], filePathsExcludes: DOCS_ONLY_PATHS }],
+        },
+      });
+    }
   }
 
   /**
