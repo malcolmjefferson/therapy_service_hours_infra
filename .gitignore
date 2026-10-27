@@ -21,3 +21,6 @@ cdk.context.json.bak
 .cdk.staging/
 # CloudFront Function source (plain JS by design)
 !lib/app/spa-rewrite.js
+
+# Python bytecode from the seed and auth script tests
+__pycache__/
