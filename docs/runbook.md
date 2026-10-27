@@ -554,3 +554,35 @@ routine rollback after pool creation:** dev's removal policy deletes the pool, c
 on recreation and requiring a reviewed recovery/rebinding procedure. If access must be paused,
 prepare a reviewed change that disables the browser entry point while preserving the pool and
 Gateway protection. Keep incomplete live acceptance tickets in progress.
+
+## 19. Idempotency-key purge (S2-09)
+
+The backend stores `Idempotency-Key` records for 24 hours (`idempotency_keys`, migration `00004`).
+Expired rows are harmless, because lookups ignore them, but they accumulate until the scheduled
+cleanup deletes them. The app stack deploys it as `therapy-service-hours-<env>-idempotency-purge`
+(backend `cmd/idempotency-purge`, built with the other binaries from `cmd/*`).
+
+- **Schedule:** an EventBridge rule, `therapy-service-hours-<env>-idempotency-purge-daily`, runs it
+  at 10:30 UTC every day. Failed invocations are retried once within an hour; after that the next
+  day's run catches up.
+- **Runtime:** 128 MiB, 60 seconds, arm64, in the isolated subnets with the app security group. It
+  connects as `app_rw` over RDS IAM and deletes in batches of 500, stopping after 50 seconds. The
+  log line is the deleted count only; no key, user or response body is logged.
+- **Concurrency:** none reserved. One run a day cannot overlap itself, and a reservation would
+  tighten the concurrency preflight for no benefit.
+- **Alarm:** `therapy-service-hours-<env>-idempotency-purge-errors` notifies the alert topic when
+  a day's run records an error. The 5-minute alarms used elsewhere would miss a once-a-day failure.
+- **Cost:** no new priced service (a Lambda run of seconds a day, one EventBridge rule, 14-day
+  logs in dev and 30 in prod).
+
+**Verify after a release** (dev; the first run happens at the next 10:30 UTC):
+
+1. `aws lambda invoke --function-name therapy-service-hours-dev-idempotency-purge --payload '{}' --cli-binary-format raw-in-base64-out out.json`
+   returns `{"deleted":N}` with no `FunctionError`. The event is ignored, so an empty payload is fine.
+2. The function's log group shows one `idempotency keys purged` line with `deleted` and no
+   `IDEMPOTENCY_PURGE_*` error code. `IDEMPOTENCY_PURGE_DB_UNAVAILABLE` means the IAM connection
+   failed: check the `rds-db:connect` statement for `app_rw` and the security group.
+3. `aws events describe-rule --name therapy-service-hours-dev-idempotency-purge-daily` shows
+   `ENABLED` and `cron(30 10 * * ? *)`.
+
+A manual invocation is safe at any time; it only removes rows whose `expires_at` has passed.

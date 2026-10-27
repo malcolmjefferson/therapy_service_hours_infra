@@ -48,7 +48,7 @@ export const BUILD_TIMEOUT = Duration.minutes(30);
  */
 export const MIN_UNRESERVED_CONCURRENCY = 100;
 
-export const BACKEND_LAMBDAS = ['api', 'migrate', 'dbbootstrap', 'dbbootstrap-provider', 'presignup', 'seed'] as const;
+export const BACKEND_LAMBDAS = ['api', 'migrate', 'dbbootstrap', 'dbbootstrap-provider', 'presignup', 'seed', 'idempotency-purge'] as const;
 
 /** Props for {@link PipelineStack}. */
 export interface PipelineStackProps extends StackProps {
