@@ -789,10 +789,11 @@ Header with title/kicker per prototype, user name menu, nav items by role, signe
 
 **Acceptance criteria**
 
-- [ ] Nav shows only permitted items
-- [ ] Access-denied page text matches US-02
-- [ ] The page renders both a pre-sign-up rejection from the callback and a 403 from /me
-- [ ] axe has no serious violations
+- [ ] An automated test verifies that the nav shows only the items permitted for each role
+- [ ] An automated test verifies that the access-denied page text matches US-02
+- [ ] An automated test verifies that the page renders both a pre-sign-up rejection from the callback and a 403 from /me
+- [ ] An automated axe test reports no serious violations
+- [ ] Each criterion above is covered by a test that already exists on main or is added by this ticket, and the tests run in CI
 
 **Definition of Done**
 
