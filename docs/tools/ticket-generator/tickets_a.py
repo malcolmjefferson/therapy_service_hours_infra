@@ -159,7 +159,7 @@ t("S1-10","Story","Frontend auth: Cognito hosted UI (code + PKCE), AuthProvider,
   2,"S1-01,S1-08,S1-16,S0-19","FR-AUTH-01,FR-AUTH-06","US-01","frontend,auth","Highest")
 t("S1-11","Story","App shell: header, role-aware nav, landing and access-denied pages",
   "Header with title/kicker per prototype, user name menu, nav items by role, signed-out landing, 'Access has not been granted' page for rejected sign-ins.",
-  "Nav shows only permitted items|Access-denied page text matches US-02|The page renders both a pre-sign-up rejection from the callback and a 403 from /me|axe has no serious violations",
+  "An automated test verifies that the nav shows only the items permitted for each role|An automated test verifies that the access-denied page text matches US-02|An automated test verifies that the page renders both a pre-sign-up rejection from the callback and a 403 from /me|An automated axe test reports no serious violations|Each criterion above is covered by a test that already exists on main or is added by this ticket, and the tests run in CI",
   1.5,"S1-10","FR-AUTH-06","US-01,US-02","frontend,ux","High")
 t("S1-12","Task","Role authority and token staleness: tests and runbook note",
   "Verify that the users row decides admin and supervisor, and that cognito:groups claims cannot grant anything in S1, including stale tokens after a demotion. Record what is deferred: Cognito-side group assignment and global sign-out arrive with S5-05, so until then revocation is enforced by the database check on the next request.",
