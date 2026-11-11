@@ -1,4 +1,4 @@
-import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib/core';
+import { CfnOutput, Duration, Stack, StackProps } from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 import { EnvConfig, resourcePrefix } from '../../config';
 import { LambdaArtifacts } from '../artifacts';
@@ -6,6 +6,7 @@ import { ComparisonOperator } from 'aws-cdk-lib/aws-cloudwatch';
 import { ALARM_PERIOD, ALARM_THRESHOLDS } from './alerts';
 import { Api } from './api';
 import { DataStack } from './data-stack';
+import { IdempotencyPurge } from './idempotency-purge';
 import { PreSignUp } from './presignup';
 import { Seed } from './seed';
 
@@ -24,12 +25,19 @@ export class AppStack extends Stack {
   readonly api: Api;
   readonly preSignUp: PreSignUp;
   readonly seed: Seed;
+  readonly idempotencyPurge: IdempotencyPurge;
 
   constructor(scope: Construct, id: string, props: AppStackProps) {
     super(scope, id, props);
     const prefix = resourcePrefix(props.config);
 
     this.seed = new Seed(this, 'Seed', { config: props.config, prefix, artifacts: props.artifacts, vpc: props.data.network.vpc, securityGroup: props.data.network.appSecurityGroup, database: props.data.database.instance, auth: props.data.auth });
+
+    this.idempotencyPurge = new IdempotencyPurge(this, 'IdempotencyPurge', {
+      config: props.config, prefix, artifacts: props.artifacts,
+      vpc: props.data.network.vpc, securityGroup: props.data.network.appSecurityGroup,
+      database: props.data.database.instance,
+    });
 
     this.preSignUp = new PreSignUp(this, 'PreSignUp', {
       config: props.config, prefix, artifacts: props.artifacts,
@@ -63,6 +71,12 @@ export class AppStack extends Stack {
       alarmName: `${prefix}presignup-duration`, alarmDescription: 'Invitation gate is approaching the Cognito five-second ceiling',
       metric: this.preSignUp.function.metricDuration({ period: ALARM_PERIOD, statistic: 'Maximum' }),
       threshold: 4000, evaluationPeriods: 1, comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+    });
+    // One run a day: a daily period makes a single failed run alarm, which the 5-minute alarms would miss.
+    alerts.alarm(this, 'IdempotencyPurgeErrorsAlarm', {
+      alarmName: `${prefix}idempotency-purge-errors`, alarmDescription: 'The daily idempotency-key cleanup failed; expired keys accumulate until a run succeeds',
+      metric: this.idempotencyPurge.function.metricErrors({ period: Duration.days(1), statistic: 'Sum' }),
+      threshold: 1, evaluationPeriods: 1, comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
     });
     const fn = this.api.function;
     alerts.alarm(this, 'Api5xxAlarm', {
